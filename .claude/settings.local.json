@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mvn clean *)",
+      "Bash(xcopy \"d:\\\\1.Project\\\\microservice\\\\shared\\\\src\\\\main\\\\java\\\\com\\\\microservice\\\\shared\\\\*\" \"d:\\\\1.Project\\\\microservice\\\\cms-service\\\\src\\\\main\\\\java\\\\com\\\\microservice\\\\cms\\\\shared\\\\\" /E /I /Y)",
+      "PowerShell(Get-ChildItem -Path \"d:\\\\1.Project\\\\microservice\\\\cms-service\\\\src\\\\main\\\\java\\\\com\\\\cms\" -Recurse -File | Where-Object { $_.Name -match '^\\\\s' } | ForEach-Object { $newName = $_.Name -replace '\\\\s',''; $newPath = Join-Path $_.DirectoryName $newName; Move-Item -Path $_.FullName -Destination $newPath -Force })",
+      "Bash(mysql -h localhost -u admin -p123456aA@ -e \"SHOW DATABASES;\")",
+      "Bash(mvn spring-boot:run -Dspring-boot.run.profiles=dev)",
+      "Bash(mvn spring-boot:run -Dspring-boot.run.profiles=dev -e)",
+      "Bash(netstat -ano)",
+      "Bash(findstr \":8081\")",
+      "Bash(taskkill //F //PID 33404)",
+      "Bash(mvn spring-boot:run)",
+      "Bash(timeout 20 powershell -Command \"Start-Sleep -Seconds 20\")",
+      "Bash(timeout 25 powershell -Command \"Start-Sleep -Seconds 25\")",
+      "Bash(Get-ChildItem -Path \"d:\\\\1.Project\\\\microservice\" -Directory)",
+      "Bash(Select-Object -First 20 Name)",
+      "Bash(xargs grep -l \"FeignClient\\\\|@FeignClient\")",
+      "Bash(xargs grep -l \"payment\\\\|Payment\\\\|PaymentMethod\\\\|paymentMethod\")"
+    ]
+  }
+}

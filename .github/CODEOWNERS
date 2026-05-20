@@ -1,0 +1,19 @@
+# CODEOWNERS file
+
+# Định nghĩa danh sách người được phép approve PR cho repository này
+
+# Tham khảo: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Global code owners - áp dụng cho tất cả files trong repository
+
+- @namnhcntt namnh@osp.vn minhnv@osp.vn
+
+# Các quy tắc cụ thể có thể được thêm vào sau này
+
+# Ví dụ:
+
+# /docs/ @namnhcntt namnh@osp.vn
+
+# \*.md @namnhcntt namnh@osp.vn
+
+# /src/main/java/ @namnhcntt cuongnh@osp.vn

@@ -1,0 +1,88 @@
+name: "CD Release"
+
+on:
+  push:
+    branches:
+      - 'develop'
+      - 'test'
+      - 'staging'
+      - 'production'
+    tags:
+      - 'v[0-9]*.[0-9]*.[0-9]*'
+
+concurrency:
+  group: cd-release-${{ github.repository }}-${{ github.ref_name }}
+  cancel-in-progress: true
+
+env:
+  SERVICE_NAME: kolia-qlbh-service
+  DOCKER_NAMESPACE: kolia-qlbh
+
+permissions:
+  contents: read
+  packages: write
+  pull-requests: read
+
+jobs:
+  release:
+    name: "Build và Publish Docker Image"
+    uses: ospgroupvn/k8s-deployment/.github/workflows/reusable-java-backend-service.yml@main
+    with:
+      service-name: "kolia-qlbh-service"
+      docker-namespace: kolia-qlbh
+      force-build: false
+    secrets: inherit
+
+  deploy-vm:
+    name: 'Deploy to VM'
+    runs-on: ${{ vars.DEFAULT_RUNNER_LABEL || 'ubuntu-latest' }}
+    needs: release
+    env:
+      DEPLOY_HOST: ${{ github.ref_name == 'production' && '103.172.237.69' || '192.168.1.78' }}
+      DEPLOY_USER: ${{ github.ref_name == 'production' && 'root' || 'ubuntu' }}
+      SPRING_PROFILE: ${{ github.ref_name == 'production' && 'production' || 'dev' }}
+    steps:
+      - name: Import Docker credentials
+        uses: ospgroupvn/k8s-deployment/.github/actions/add-docker-admin@main
+        with:
+          vault-auth-type: 'kubernetes'
+
+      - name: Deploy to VM
+        run: |
+          mkdir -p ~/.ssh
+          if [ "${{ github.ref_name }}" = "production" ]; then
+            echo "${{ secrets.VM_SSH_PRIVATE_KEY_PRODUCTION }}" > ~/.ssh/id_rsa
+          else
+            echo "${{ secrets.VM_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          fi
+          chmod 600 ~/.ssh/id_rsa
+
+          IMAGE="${OSP_REGISTRY}/${{ env.DOCKER_NAMESPACE }}/${{ env.SERVICE_NAME }}:${GITHUB_REF_NAME}"
+
+          ssh -o StrictHostKeyChecking=no ${{ env.DEPLOY_USER }}@${{ env.DEPLOY_HOST }} << EOF
+            echo "$OSP_REGISTRY_PASSWORD" | docker login $OSP_REGISTRY -u "$OSP_REGISTRY_USERNAME" --password-stdin
+            docker pull $IMAGE
+            docker stop ${{ env.SERVICE_NAME }} -t 10 2>/dev/null || true
+            docker rm -f ${{ env.SERVICE_NAME }} 2>/dev/null || true
+            mkdir -p /data/kolia-qlbh/cdn.kolia /data/kolia-qlbh/exports
+            if [ "$GITHUB_REF_NAME" = "production" ]; then
+              docker run -d --name ${{ env.SERVICE_NAME }} --restart unless-stopped \
+                --network host \
+                --env-file /data/kolia-qlbh/.env \
+                -e SPRING_PROFILES_ACTIVE=${{ env.SPRING_PROFILE }} \
+                -v /data/kolia-qlbh/cdn.kolia:/app/cdn.kolia \
+                -v /data/kolia-qlbh/exports:/app/exports \
+                $IMAGE
+            else
+              docker run -d --name ${{ env.SERVICE_NAME }} --restart unless-stopped \
+                -p 8086:8086 \
+                --env-file /data/kolia-qlbh/.env \
+                -e SPRING_PROFILES_ACTIVE=${{ env.SPRING_PROFILE }} \
+                -v /data/kolia-qlbh/cdn.kolia:/app/cdn.kolia \
+                -v /data/kolia-qlbh/exports:/app/exports \
+                $IMAGE
+            fi
+            docker image prune -f
+          EOF
+
+          echo "✅ Deployed to ${{ env.DEPLOY_HOST }} (${{ github.ref_name }})"
