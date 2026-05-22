@@ -23,6 +23,7 @@
         <module>cms-service</module>
         <module>order-service</module>
         <module>payment-service</module>
+        <module>api-gateway</module>
     </modules>
 
     <properties>
@@ -57,6 +58,12 @@
             <dependency>
                 <groupId>com.microservices</groupId>
                 <artifactId>payment-service</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.microservices</groupId>
+                <artifactId>api-gateway</artifactId>
                 <version>${project.version}</version>
             </dependency>
 

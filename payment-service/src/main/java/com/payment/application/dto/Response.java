@@ -1,35 +1,31 @@
 package com.payment.application.dto;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
 import java.time.LocalDateTime;
 
 /**
  * Generic response class cho tất cả API responses.
  */
-@Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
 public class Response<T> {
-    private int status;
-    private String message;
-    private T data;
-    private LocalDateTime timestamp;
+    public int status;
+    public String message;
+    public T data;
+    public LocalDateTime timestamp;
+
+    public Response() {
+    }
+
+    public Response(int status, String message, T data, LocalDateTime timestamp) {
+        this.status = status;
+        this.message = message;
+        this.data = data;
+        this.timestamp = timestamp;
+    }
 
     /**
      * Tạo response thành công với message và data.
      */
     public static <T> Response<T> success(String message, T data) {
-        return Response.<T>builder()
-                .status(200)
-                .message(message)
-                .data(data)
-                .timestamp(LocalDateTime.now())
-                .build();
+        return new Response<>(200, message, data, LocalDateTime.now());
     }
 
     /**
@@ -43,11 +39,7 @@ public class Response<T> {
      * Tạo response lỗi với status và message tùy chỉnh.
      */
     public static <T> Response<T> error(int status, String message) {
-        return Response.<T>builder()
-                .status(status)
-                .message(message)
-                .timestamp(LocalDateTime.now())
-                .build();
+        return new Response<>(status, message, null, LocalDateTime.now());
     }
 
     /**

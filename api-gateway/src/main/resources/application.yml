@@ -74,6 +74,11 @@ management:
     tags:
       application: ${spring.application.name}
 
+# Test Configuration (Chỉ enable trong development)
+gateway:
+  test:
+    enabled: false
+
 # Cấu hình Logging
 logging:
   level:

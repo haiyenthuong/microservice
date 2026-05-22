@@ -67,9 +67,8 @@ public class OrderController {
     @PostMapping
     @Operation(summary = "Create order", description = "Create a new order")
     public Response<OrderResponse> createOrder(@Valid @RequestBody CreateOrderRequest request) {
-        // Current user ID will be extracted from JWT token in CreateOrderCommand
-        String currentUserId = null; // Will be extracted from SecurityHelper
-        OrderResponse response = createOrderCommand.execute(request, currentUserId);
+        // User ID will be extracted from SecurityHelper inside CreateOrderCommand
+        OrderResponse response = createOrderCommand.execute(request);
         return Response.success("Order created successfully", response);
     }
 

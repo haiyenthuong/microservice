@@ -3,6 +3,8 @@ spring:
     name: order-service
   profiles:
     active: dev
+
+  # JPA Configuration
   jpa:
     open-in-view: false
     show-sql: true
@@ -12,6 +14,79 @@ spring:
         format_sql: true
         use_sql_comments: true
 
+  # Kafka Configuration for Event-Driven Architecture
+  kafka:
+    # Kafka bootstrap servers
+    bootstrap-servers: localhost:9092
+
+    # Producer Configuration
+    producer:
+      # Key serializer - Order ID as String
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      # Value serializer - JSON for events
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      # Acknowledgment mode: all (wait for all replicas)
+      acks: all
+      # Enable idempotence to avoid duplicates
+      enable-idempotence: true
+      # Compression type: snappy for balance between speed and compression
+      compression-type: snappy
+      # Batch size in bytes
+      batch-size: 16384
+      # Linger time in milliseconds (wait before sending batch)
+      linger-ms: 10
+      # Buffer size in bytes
+      buffer-memory: 33554432
+      # Retries
+      retries: 3
+
+    # Consumer Configuration
+    consumer:
+      # Key deserializer - Order ID as String
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      # Value deserializer - JSON for events
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      # Consumer group ID
+      group-id: order-service-group
+      # Auto offset reset: earliest (start from beginning if no offset)
+      auto-offset-reset: earliest
+      # Enable auto commit
+      enable-auto-commit: true
+      # Auto commit interval in milliseconds
+      auto-commit-interval-ms: 1000
+      # Trusted packages for JSON deserialization
+      properties:
+        spring.json.trusted.packages: "*"
+        spring.json.type.mapping: "event:com.order.infrastructure.kafka.event"
+
+    # Listener Configuration
+    listener:
+      # Concurrency: number of threads for listener
+      concurrency: 3
+      # Auto startup
+      auto-startup: true
+      # Ack mode: manual_immediate (manual ack after processing)
+      ack-mode: manual_immediate
+
+    # Topic Configuration - Custom properties
+    topics:
+      # Order Events Topic
+      order:
+        name: order-events
+        partitions: 3
+        replication-factor: 1
+      # Payment Events Topic (for consuming payment responses)
+      payment:
+        name: payment-events
+        partitions: 3
+        replication-factor: 1
+      # Dead Letter Topic for failed events
+      dead-letter:
+        name: order-events-dlt
+        partitions: 1
+        replication-factor: 1
+
+# Server Configuration
 server:
   port: 8082
   servlet:
@@ -59,6 +134,7 @@ resilience4j:
         max-attempts: 3
         wait-duration: 1000
 
+# SpringDoc Configuration
 springdoc:
   api-docs:
     enabled: true
@@ -69,17 +145,43 @@ springdoc:
     operations-sorter: method
     tags-sorter: alpha
 
-# CMS Service Configuration (for Feign client)
+# Service URLs Configuration
+# Lưu ý: Trong production, các URL này nên được cấu hình qua environment variables hoặc config server
 cms-service:
   name: cms-service
   url: http://localhost:8081
 
-# JWT Configuration
-jwt:
-  secret: 5367566B59703373367639792F423F4528482B4D6251655468576D5A71347437
-  expiration: 86400000
-  refresh-expiration: 604800000
-
-# Payment Service Configuration
 payment-service:
   url: http://localhost:8083
+
+# Logging Configuration
+logging:
+  level:
+    root: INFO
+    com.order: DEBUG
+    org.springframework.kafka: INFO
+    org.apache.kafka: WARN
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+
+# Actuator Configuration
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,kafka
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    tags:
+      application: ${spring.application.name}
+
+# Info Configuration
+info:
+  app:
+    name: ${spring.application.name}
+    description: Order Service - Event-Driven Microservice
+    version: 1.0.0
+    architecture: event-driven

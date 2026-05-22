@@ -1,14 +1,8 @@
 package com.payment.interfaces.rest;
 
-import com.payment.application.command.ProcessPaymentCommand;
-import com.payment.application.dto.PaymentResponse;
-import com.payment.application.dto.ProcessPaymentRequest;
 import com.payment.application.dto.Response;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -16,22 +10,30 @@ import org.springframework.web.bind.annotation.*;
  */
 @RestController
 @RequestMapping("/v1/payments")
-@RequiredArgsConstructor
 @Tag(name = "Payment Management", description = "Payment processing APIs")
 public class PaymentController {
 
-    private final ProcessPaymentCommand processPaymentCommand;
+    /**
+     * Health check endpoint.
+     *
+     * @return status message
+     */
+    @GetMapping("/health")
+    @Operation(summary = "Health check", description = "Check if payment service is running")
+    public Response<String> health() {
+        return Response.success("Payment Service is running");
+    }
 
     /**
-     * Xử lý thanh toán cho một đơn hàng.
+     * Lấy thông tin payment theo ID.
      *
-     * @param request thông tin thanh toán
-     * @return kết quả xử lý thanh toán
+     * @param id Payment ID
+     * @return thông tin payment
      */
-    @PostMapping("/process")
-    @Operation(summary = "Process payment", description = "Process payment for an order")
-    public Response<PaymentResponse> processPayment(@Valid @RequestBody ProcessPaymentRequest request) {
-        PaymentResponse response = processPaymentCommand.execute(request);
-        return Response.success("Payment processed", response);
+    @GetMapping("/{id}")
+    @Operation(summary = "Get payment by ID", description = "Retrieve payment information by ID")
+    public Response<String> getPaymentById(@PathVariable String id) {
+        // TODO: Implement get payment by ID
+        return Response.success("Payment retrieval not yet implemented via REST. Use Kafka events.");
     }
 }
