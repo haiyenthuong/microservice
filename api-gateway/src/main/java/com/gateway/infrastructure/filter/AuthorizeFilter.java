@@ -27,13 +27,15 @@ import java.util.Map;
  * Filter này:
  * 1. Trích xuất JWT token từ Authorization header
  * 2. Giải mã và validate token bằng JwtService
- * 3. Inject thông tin user vào headers (X-User-Id, X-User-Name, X-User-Fullname)
+ * 3. Inject thông tin user vào headers (X-User-Id, X-User-Name,
+ * X-User-Fullname)
  * 4. Cho phép request đi qua nếu token hợp lệ
  * 5. Từ chối request nếu token không hợp lệ hoặc không có
  *
  * Cấu hình trong application.yml:
+ * 
  * <pre>
- * spring.cloud.gateway.routes[0].filters[1]=AuthorizeFilter
+ * spring.cloud.gateway.routes[0].filters[1] = AuthorizeFilter
  * </pre>
  */
 @Slf4j
@@ -59,6 +61,7 @@ public class AuthorizeFilter extends AbstractGatewayFilterFactory<AuthorizeFilte
         // Có thể thêm các thuộc tính cấu hình tại đây nếu cần
         // Ví dụ: boolean required, List<String> excludedPaths, etc.
     }
+
     @Override
     public GatewayFilter apply(Config config) {
         return (exchange, chain) -> {
@@ -138,7 +141,7 @@ public class AuthorizeFilter extends AbstractGatewayFilterFactory<AuthorizeFilte
     /**
      * Trích xuất claim từ Claims object và chuyển thành String
      *
-     * @param claims Claims object từ JWT
+     * @param claims    Claims object từ JWT
      * @param claimName Tên claim cần trích xuất
      * @return Giá trị claim dưới dạng String, null nếu không tồn tại
      */
@@ -177,7 +180,7 @@ public class AuthorizeFilter extends AbstractGatewayFilterFactory<AuthorizeFilte
     /**
      * Xử lý lỗi authentication và trả về response lỗi
      *
-     * @param response ServerHttpResponse
+     * @param response     ServerHttpResponse
      * @param errorMessage Thông báo lỗi
      * @return Mono<Void> complete signal
      */

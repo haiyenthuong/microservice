@@ -54,8 +54,7 @@ public class OrderEventProducerService {
     public void publishOrderCreatedAfterCommit(OrderCreatedEvent event) {
         log.info("Publishing OrderCreatedEvent after transaction commit: {}", event.getAggregateId());
         try {
-            CompletableFuture<SendResult<String, OrderEvent>> future =
-                    orderEventProducer.publishOrderCreated(event);
+            CompletableFuture<SendResult<String, OrderEvent>> future = orderEventProducer.publishOrderCreated(event);
 
             // Log success
             future.whenComplete((result, ex) -> {
@@ -100,11 +99,11 @@ public class OrderEventProducerService {
      * Event này được publish sau khi Order Service nhận PaymentSuccessEvent
      * từ Payment Service và update order status thành PAID.
      *
-     * @param orderId Order ID
-     * @param paymentId Payment ID
+     * @param orderId       Order ID
+     * @param paymentId     Payment ID
      * @param transactionId Transaction ID
-     * @param paidAmount Số tiền đã thanh toán
-     * @param currency Currency code
+     * @param paidAmount    Số tiền đã thanh toán
+     * @param currency      Currency code
      * @param paymentMethod Payment method
      */
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
@@ -114,28 +113,26 @@ public class OrderEventProducerService {
             String transactionId,
             java.math.BigDecimal paidAmount,
             String currency,
-            String paymentMethod
-    ) {
+            String paymentMethod) {
         log.info("Publishing OrderPaidEvent for order: {}", orderId);
 
         try {
             OrderPaidEvent event = new OrderPaidEvent(
-                    UUID.randomUUID().toString(),     // eventId
-                    orderId,                          // aggregateId
-                    Instant.now(),                    // timestamp
-                    getCurrentUserId(),                // userId
-                    generateTraceId(),                // traceId
-                    orderId,                          // orderId
-                    null,                            // orderNumber (not available here)
-                    paymentId,                        // paymentId
-                    transactionId,                    // transactionId
-                    paidAmount,                       // amount
-                    currency,                         // currency
-                    paymentMethod                     // paymentMethod
+                    UUID.randomUUID().toString(), // eventId
+                    orderId, // aggregateId
+                    Instant.now(), // timestamp
+                    getCurrentUserId(), // userId
+                    generateTraceId(), // traceId
+                    orderId, // orderId
+                    null, // orderNumber (not available here)
+                    paymentId, // paymentId
+                    transactionId, // transactionId
+                    paidAmount, // amount
+                    currency, // currency
+                    paymentMethod // paymentMethod
             );
 
-            CompletableFuture<SendResult<String, OrderEvent>> future =
-                    orderEventProducer.publishOrderPaid(event);
+            CompletableFuture<SendResult<String, OrderEvent>> future = orderEventProducer.publishOrderPaid(event);
 
             future.whenComplete((result, ex) -> {
                 if (ex == null) {
@@ -156,38 +153,37 @@ public class OrderEventProducerService {
      * Event này được publish sau khi Order Service nhận PaymentFailedEvent
      * từ Payment Service.
      *
-     * @param orderId Order ID
+     * @param orderId       Order ID
      * @param failureReason Lý do thất bại
-     * @param errorCode Error code
-     * @param retryable Có thể retry hay không
+     * @param errorCode     Error code
+     * @param retryable     Có thể retry hay không
      */
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void publishOrderPaymentFailed(
             String orderId,
             String failureReason,
             String errorCode,
-            boolean retryable
-    ) {
+            boolean retryable) {
         log.info("Publishing OrderPaymentFailedEvent for order: {} | Reason: {}", orderId, failureReason);
 
         try {
             OrderPaymentFailedEvent event = new OrderPaymentFailedEvent(
-                    UUID.randomUUID().toString(),     // eventId
-                    orderId,                          // aggregateId
-                    Instant.now(),                    // timestamp
-                    getCurrentUserId(),                // userId
-                    generateTraceId(),                // traceId
-                    orderId,                          // orderId
-                    null,                            // orderNumber (not available here)
-                    null,                            // amount (not available here)
-                    null,                            // currency (not available here)
-                    failureReason,                    // reason
-                    errorCode,                        // errorCode
-                    retryable                         // retryable
+                    UUID.randomUUID().toString(), // eventId
+                    orderId, // aggregateId
+                    Instant.now(), // timestamp
+                    getCurrentUserId(), // userId
+                    generateTraceId(), // traceId
+                    orderId, // orderId
+                    null, // orderNumber (not available here)
+                    null, // amount (not available here)
+                    null, // currency (not available here)
+                    failureReason, // reason
+                    errorCode, // errorCode
+                    retryable // retryable
             );
 
-            CompletableFuture<SendResult<String, OrderEvent>> future =
-                    orderEventProducer.publishOrderPaymentFailed(event);
+            CompletableFuture<SendResult<String, OrderEvent>> future = orderEventProducer
+                    .publishOrderPaymentFailed(event);
 
             future.whenComplete((result, ex) -> {
                 if (ex == null) {

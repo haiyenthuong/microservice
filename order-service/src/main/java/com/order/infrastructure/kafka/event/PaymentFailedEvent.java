@@ -16,7 +16,8 @@ import lombok.NoArgsConstructor;
  * 2. Payment Service consumes OrderCreatedEvent và process payment
  * 3. Payment failed → Payment Service publishes PaymentFailedEvent (event này)
  * 4. Order Service consumes PaymentFailedEvent và update order status
- * 5. Order Service có thể publish OrderPaymentFailedEvent để notify other services
+ * 5. Order Service có thể publish OrderPaymentFailedEvent để notify other
+ * services
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
@@ -41,8 +42,7 @@ public class PaymentFailedEvent extends OrderEvent {
             String orderId,
             String failureReason,
             String errorCode,
-            boolean retryable
-    ) {
+            boolean retryable) {
         super();
         setEventId(eventId);
         setEventType(EVENT_TYPE);
