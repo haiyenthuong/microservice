@@ -74,10 +74,17 @@ management:
     tags:
       application: ${spring.application.name}
 
-# Test Configuration (Chỉ enable trong development)
-gateway:
-  test:
-    enabled: false
+# Cấu hình Custom Gateway Properties (excluded paths, etc.)
+custom:
+  gateway:
+    test:
+      enabled: false
+    excluded-paths:
+      enabled: true
+      paths:
+        - /health
+        - /actuator/**
+        - /public/**
 
 # Cấu hình Logging
 logging:

@@ -5,23 +5,29 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
 /**
- * Gateway Properties - Bind configuration từ application.yml
+ * Custom Gateway Properties - Bind configuration từ application.yml
  *
- * Class này map các configuration có prefix "gateway" trong application.yml
+ * Class này map các configuration có prefix "custom.gateway" trong
+ * application.yml
+ * Đổi tên và prefix để tránh xung đột với Spring Cloud Gateway's built-in
+ * GatewayProperties
  *
  * Example trong application.yml:
+ * 
  * <pre>
- * gateway:
- *   excluded-paths:
- *     - /health
- *     - /actuator/**
- *     - /public/**
+ * custom:
+ *   gateway:
+ *     excluded-paths:
+ *       paths:
+ *         - /health
+ *         - /actuator/**
+ *         - /public/**
  * </pre>
  */
 @Data
 @Component
-@ConfigurationProperties(prefix = "gateway")
-public class GatewayProperties {
+@ConfigurationProperties(prefix = "custom.gateway")
+public class CustomGatewayProperties {
 
     /**
      * List các paths không cần authentication
