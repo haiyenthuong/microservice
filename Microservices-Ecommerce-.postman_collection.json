@@ -1,0 +1,1127 @@
+{
+  "info": {
+    "name": "Microservices E-commerce",
+    "description": "Full API collection for e-commerce microservices system",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "version": "1.0.0"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080",
+      "type": "string"
+    },
+    {
+      "key": "accessToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "userId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "🔐 Auth Service",
+      "item": [
+        {
+          "name": "Authentication",
+          "item": [
+            {
+              "name": "Login",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"123456aA@\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/auth/login",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["auth", "login"],
+                  "query": []
+                },
+                "description": "Login with username and password to get JWT tokens",
+                "response": []
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "var jsonData = pm.response.json();",
+                      "pm.collectionVariables.set(\"accessToken\", jsonData.data.accessToken);",
+                      "pm.collectionVariables.set(\"userId\", jsonData.data.userId);",
+                      "pm.collectionVariables.set(\"username\", jsonData.data.username);",
+                      "console.log(\"Token saved:\", jsonData.data.accessToken);",
+                      "pm.test(\"Login successful\", pm.response.code === 200);",
+                      "pm.test(\"Access token exists\", jsonData.data.accessToken);"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Register",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"username\": \"testuser\",\n  \"password\": \"Password123!\",\n  \"confirmPassword\": \"Password123!\",\n  \"fullname\": \"Test User\",\n  \"email\": \"testuser@example.com\",\n  \"mobile\": \"0123456789\",\n  \"address\": \"Ho Chi Minh City\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/auth/register",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["auth", "register"],
+                  "query": []
+                },
+                "description": "Register new user account"
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test(\"Registration successful\", pm.response.code === 201 || pm.response.code === 200);"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Refresh Token",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"refreshToken\": \"{{accessToken}}\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/auth/refresh-token",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["auth", "refresh-token"],
+                  "query": []
+                },
+                "description": "Get new access token using refresh token"
+              }
+            },
+            {
+              "name": "Change Password",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "X-User-Id",
+                    "value": "{{userId}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"currentPassword\": \"123456aA@\",\n  \"newPassword\": \"NewPassword123!\",\n  \"confirmPassword\": \"NewPassword123!\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/auth/change-password",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["auth", "change-password"],
+                  "query": []
+                },
+                "description": "Change current user password"
+              }
+            },
+            {
+              "name": "Logout",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "X-User-Id",
+                    "value": "{{userId}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/auth/logout",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["auth", "logout"],
+                  "query": []
+                },
+                "description": "Logout and revoke refresh token"
+              }
+            },
+            {
+              "name": "Get Current User",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "X-User-Id",
+                    "value": "{{userId}}"
+                  },
+                  {
+                    "key": "X-User-Name",
+                    "value": "{{username}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/auth/me",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["auth", "me"],
+                  "query": []
+                },
+                "description": "Get current logged in user information"
+              }
+            }
+          ]
+        },
+        {
+          "name": "User Management",
+          "item": [
+            {
+              "name": "Get All Users",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/auth/users",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["auth", "users"],
+                  "query": []
+                },
+                "description": "Get all users in the system"
+              }
+            },
+            {
+              "name": "Get User By ID",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/auth/users/1",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["auth", "users", "1"],
+                  "query": []
+                },
+                "description": "Get specific user by ID"
+              }
+            },
+            {
+              "name": "Search Users",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/auth/users/search?keyword=admin",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["auth", "users", "search"],
+                  "query": [
+                    {
+                      "key": "keyword",
+                      "value": "admin"
+                    }
+                  ]
+                },
+                "description": "Search users by username or fullname"
+              }
+            },
+            {
+              "name": "Get Users By Type",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/auth/users/type/1",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["auth", "users", "type", "1"],
+                  "query": []
+                },
+                "description": "Get users by type (0: ADMIN, 1: CUSTOMER)"
+              }
+            },
+            {
+              "name": "Create User",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"username\": \"newuser\",\n  \"password\": \"Password123!\",\n  \"fullname\": \"New User\",\n  \"email\": \"newuser@example.com\",\n  \"mobile\": \"0123456789\",\n  \"address\": \"HCM\",\n  \"userType\": 1\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/auth/users",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["auth", "users"],
+                  "query": []
+                },
+                "description": "Create new user account"
+              }
+            },
+            {
+              "name": "Update User",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"fullname\": \"Updated Name\",\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/auth/users/1",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["auth", "users", "1"],
+                  "query": []
+                },
+                "description": "Update user information"
+              }
+            },
+            {
+              "name": "Lock User",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/auth/users/1/lock",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["auth", "users", "1", "lock"],
+                  "query": []
+                },
+                "description": "Lock user account"
+              }
+            },
+            {
+              "name": "Unlock User",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/auth/users/1/unlock",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["auth", "users", "1", "unlock"],
+                  "query": []
+                },
+                "description": "Unlock user account"
+              }
+            },
+            {
+              "name": "Delete User",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/auth/users/1",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["auth", "users", "1"],
+                  "query": []
+                },
+                "description": "Soft delete user account"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Authority Management",
+          "item": [
+            {
+              "name": "Get All Authorities",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/auth/authorities",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["auth", "authorities"],
+                  "query": []
+                },
+                "description": "Get all authorities/permissions"
+              }
+            },
+            {
+              "name": "Get Authority By ID",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/auth/authorities/1",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["auth", "authorities", "1"],
+                  "query": []
+                },
+                "description": "Get specific authority by ID"
+              }
+            },
+            {
+              "name": "Search Authorities",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/auth/authorities/search?keyword=user",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["auth", "authorities", "search"],
+                  "query": [
+                    {
+                      "key": "keyword",
+                      "value": "user"
+                    }
+                  ]
+                },
+                "description": "Search authorities by name or description"
+              }
+            },
+            {
+              "name": "Create Authority",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"authority\": \"PRODUCT_WRITE\",\n  \"fid\": \"PRODUCT\",\n  \"description\": \"Write access to products\",\n  \"orderId\": 1,\n  \"authKey\": \"product.write\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/auth/authorities",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["auth", "authorities"],
+                  "query": []
+                },
+                "description": "Create new authority/permission"
+              }
+            },
+            {
+              "name": "Update Authority",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"description\": \"Updated description\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/auth/authorities/1",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["auth", "authorities", "1"],
+                  "query": []
+                },
+                "description": "Update authority information"
+              }
+            },
+            {
+              "name": "Delete Authority",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/auth/authorities/1",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["auth", "authorities", "1"],
+                  "query": []
+                },
+                "description": "Delete authority"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Group Management",
+          "item": [
+            {
+              "name": "Get All Groups",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/auth/groups",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["auth", "groups"],
+                  "query": []
+                },
+                "description": "Get all groups"
+              }
+            },
+            {
+              "name": "Get Group By ID",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/auth/groups/1",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["auth", "groups", "1"],
+                  "query": []
+                },
+                "description": "Get specific group by ID"
+              }
+            },
+            {
+              "name": "Search Groups",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/auth/groups/search?keyword=admin",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["auth", "groups", "search"],
+                  "query": [
+                    {
+                      "key": "keyword",
+                      "value": "admin"
+                    }
+                  ]
+                },
+                "description": "Search groups by name or description"
+              }
+            },
+            {
+              "name": "Create Group",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"groupName\": \"CONTENT_ADMINS\",\n  \"description\": \"Content administrators group\",\n  \"type\": 1,\n  \"authority\": \"CONTENT\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/auth/groups",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["auth", "groups"],
+                  "query": []
+                },
+                "description": "Create new group"
+              }
+            },
+            {
+              "name": "Update Group",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"description\": \"Updated description\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/auth/groups/1",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["auth", "groups", "1"],
+                  "query": []
+                },
+                "description": "Update group information"
+              }
+            },
+            {
+              "name": "Get Group Authorities",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/auth/groups/1/authorities",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["auth", "groups", "1", "authorities"],
+                  "query": []
+                },
+                "description": "Get all authorities assigned to group"
+              }
+            },
+            {
+              "name": "Add Authority to Group",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/auth/groups/1/authorities?authorityId=2",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["auth", "groups", "1", "authorities"],
+                  "query": [
+                    {
+                      "key": "authorityId",
+                      "value": "2"
+                    }
+                  ]
+                },
+                "description": "Assign authority to group"
+              }
+            },
+            {
+              "name": "Remove Authority from Group",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/auth/groups/1/authorities/2",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["auth", "groups", "1", "authorities", "2"],
+                  "query": []
+                },
+                "description": "Remove authority from group"
+              }
+            },
+            {
+              "name": "Get Group Users",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/auth/groups/1/users",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["auth", "groups", "1", "users"],
+                  "query": []
+                },
+                "description": "Get all users in group"
+              }
+            },
+            {
+              "name": "Add User to Group",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/auth/groups/1/users?userId=2",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["auth", "groups", "1", "users"],
+                  "query": [
+                    {
+                      "key": "userId",
+                      "value": "2"
+                    }
+                  ]
+                },
+                "description": "Add user to group"
+              }
+            },
+            {
+              "name": "Remove User from Group",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/auth/groups/1/users/2",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["auth", "groups", "1", "users", "2"],
+                  "query": []
+                },
+                "description": "Remove user from group"
+              }
+            },
+            {
+              "name": "Delete Group",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/auth/groups/1",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["auth", "groups", "1"],
+                  "query": []
+                },
+                "description": "Delete group"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Parameter Management",
+          "item": [
+            {
+              "name": "Get All Parameters",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/auth/parameters",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["auth", "parameters"],
+                  "query": []
+                },
+                "description": "Get all system parameters"
+              }
+            },
+            {
+              "name": "Get Parameter By Key",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/auth/parameters/key/jwt.expiration",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["auth", "parameters", "key", "jwt.expiration"],
+                  "query": []
+                },
+                "description": "Get parameter by key"
+              }
+            },
+            {
+              "name": "Get Parameter Value Only",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/auth/parameters/value/jwt.expiration",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["auth", "parameters", "value", "jwt.expiration"],
+                  "query": []
+                },
+                "description": "Get parameter value only"
+              }
+            },
+            {
+              "name": "Search Parameters",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/auth/parameters/search?keyword=jwt",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["auth", "parameters", "search"],
+                  "query": [
+                    {
+                      "key": "keyword",
+                      "value": "jwt"
+                    }
+                  ]
+                },
+                "description": "Search parameters by key name or name"
+              }
+            },
+            {
+              "name": "Get Active Parameters",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/auth/parameters/active",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["auth", "parameters", "active"],
+                  "query": []
+                },
+                "description": "Get all active parameters"
+              }
+            },
+            {
+              "name": "Create Parameter",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"paramKey\": \"session.timeout\",\n  \"paramValue\": \"1800\",\n  \"paramName\": \"Session Timeout\",\n  \"description\": \"Session timeout in seconds\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/auth/parameters",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["auth", "parameters"],
+                  "query": []
+                },
+                "description": "Create new system parameter"
+              }
+            },
+            {
+              "name": "Update Parameter",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"paramValue\": \"3600\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/auth/parameters/1",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["auth", "parameters", "1"],
+                  "query": []
+                },
+                "description": "Update parameter"
+              }
+            },
+            {
+              "name": "Delete Parameter",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/auth/parameters/1",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["auth", "parameters", "1"],
+                  "query": []
+                },
+                "description": "Delete parameter"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "📦 Order Service",
+      "item": [
+        {
+          "name": "Order Management",
+          "item": [
+            {
+              "name": "Get All Orders",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/orders",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["orders"],
+                  "query": []
+                },
+                "description": "Get all orders"
+              }
+            },
+            {
+              "name": "Get Order By ID",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/orders/1",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["orders", "1"],
+                  "query": []
+                },
+                "description": "Get order by ID"
+              }
+            },
+            {
+              "name": "Create Order",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"customerId\": \"customer-123\",\n  \"items\": [\n    {\n      \"productId\": \"product-456\",\n      \"quantity\": 2,\n      \"price\": 50000,\n      \"discount\": 0\n    }\n  ],\n  \"shippingAddress\": \"HCM\",\n  \"paymentMethod\": \"CASH\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/orders",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["orders"],
+                  "query": []
+                },
+                "description": "Create new order"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "💳 Payment Service",
+      "item": [
+        {
+          "name": "Payment Management",
+          "item": [
+            {
+              "name": "Health Check",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/payments/health",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["payments", "health"],
+                  "query": []
+                },
+                "description": "Check if payment service is running"
+              }
+            },
+            {
+              "name": "Get Payment By ID",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/payments/1",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["payments", "1"],
+                  "query": []
+                },
+                "description": "Get payment information by ID"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "📊 CMS Service",
+      "item": [
+        {
+          "name": "Business Reports",
+          "item": [
+            {
+              "name": "Sales Report",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/cms/sales-report",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["cms", "sales-report"],
+                  "query": []
+                },
+                "description": "Get sales report"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

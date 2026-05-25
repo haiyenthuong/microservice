@@ -89,8 +89,6 @@ spring:
 # Server Configuration
 server:
   port: 8082
-  servlet:
-    context-path: /order-service
 
 # Eureka Client Configuration
 eureka:

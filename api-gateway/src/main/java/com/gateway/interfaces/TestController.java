@@ -43,9 +43,9 @@ public class TestController {
      * POST /public/generate-token
      * Body:
      * {
-     *   "userId": "123e4567-e89b-12d3-a456-426614174000",
-     *   "username": "testuser",
-     *   "fullname": "Test User"
+     * "userId": "123e4567-e89b-12d3-a456-426614174000",
+     * "username": "testuser",
+     * "fullname": "Test User"
      * }
      *
      * @param tokenRequest Token request body

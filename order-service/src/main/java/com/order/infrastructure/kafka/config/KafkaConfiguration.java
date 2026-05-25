@@ -25,7 +25,8 @@ import java.util.Map;
  * và Kafka Consumer để consume Payment events.
  *
  * Topics:
- * - order-events: Topic cho order events (OrderCreated, OrderPaid, OrderPaymentFailed, etc.)
+ * - order-events: Topic cho order events (OrderCreated, OrderPaid,
+ * OrderPaymentFailed, etc.)
  * - payment-events: Topic cho payment events (PaymentSuccess, PaymentFailed)
  *
  * Key Features:
@@ -65,15 +66,15 @@ public class KafkaConfiguration {
         config.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, JsonSerializer.class);
 
         // Reliability settings
-        config.put(ProducerConfig.ACKS_CONFIG, "all");  // Wait for all replicas
-        config.put(ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG, "true");  // Exactly-once semantics
-        config.put(ProducerConfig.RETRIES_CONFIG, 3);  // Retry configuration
+        config.put(ProducerConfig.ACKS_CONFIG, "all"); // Wait for all replicas
+        config.put(ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG, "true"); // Exactly-once semantics
+        config.put(ProducerConfig.RETRIES_CONFIG, 3); // Retry configuration
 
         // Performance settings
-        config.put(ProducerConfig.COMPRESSION_TYPE_CONFIG, "snappy");  // Compression
-        config.put(ProducerConfig.BATCH_SIZE_CONFIG, 16384);  // Batch size
-        config.put(ProducerConfig.LINGER_MS_CONFIG, 10);  // Linger time
-        config.put(ProducerConfig.BUFFER_MEMORY_CONFIG, 33554432);  // Buffer memory
+        config.put(ProducerConfig.COMPRESSION_TYPE_CONFIG, "snappy"); // Compression
+        config.put(ProducerConfig.BATCH_SIZE_CONFIG, 16384); // Batch size
+        config.put(ProducerConfig.LINGER_MS_CONFIG, 10); // Linger time
+        config.put(ProducerConfig.BUFFER_MEMORY_CONFIG, 33554432); // Buffer memory
 
         // JsonSerializer type mapping for event polymorphism
         config.put(JsonSerializer.TYPE_MAPPINGS, "event:" + OrderEvent.class.getName());
@@ -115,7 +116,7 @@ public class KafkaConfiguration {
         config.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, JsonDeserializer.class);
 
         // Offset management
-        config.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");  // Start from beginning if no offset
+        config.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest"); // Start from beginning if no offset
 
         // Auto commit - disabled để manual acknowledge
         config.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "false");
@@ -128,7 +129,7 @@ public class KafkaConfiguration {
         config.put(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, "10");
 
         // Max poll interval (time between polls)
-        config.put(ConsumerConfig.MAX_POLL_INTERVAL_MS_CONFIG, "300000");  // 5 minutes
+        config.put(ConsumerConfig.MAX_POLL_INTERVAL_MS_CONFIG, "300000"); // 5 minutes
 
         return new DefaultKafkaConsumerFactory<>(config,
                 new StringDeserializer(),
@@ -141,11 +142,9 @@ public class KafkaConfiguration {
      * Cấu hình listener container với manual acknowledgment.
      */
     @Bean
-    public ConcurrentKafkaListenerContainerFactory<String, OrderEvent>
-    paymentEventKafkaListenerContainerFactory() {
+    public ConcurrentKafkaListenerContainerFactory<String, OrderEvent> paymentEventKafkaListenerContainerFactory() {
 
-        ConcurrentKafkaListenerContainerFactory<String, OrderEvent> factory =
-                new ConcurrentKafkaListenerContainerFactory<>();
+        ConcurrentKafkaListenerContainerFactory<String, OrderEvent> factory = new ConcurrentKafkaListenerContainerFactory<>();
 
         factory.setConsumerFactory(paymentEventConsumerFactory());
 
@@ -167,7 +166,8 @@ public class KafkaConfiguration {
      * Kafka Admin
      *
      * Bean này có thể dùng để tạo topics programmatically nếu cần.
-     * Lưu ý: Trong production, topics thường được tạo bởi DevOps hoặc Infrastructure as Code.
+     * Lưu ý: Trong production, topics thường được tạo bởi DevOps hoặc
+     * Infrastructure as Code.
      */
     @Bean
     public KafkaAdmin kafkaAdmin() {

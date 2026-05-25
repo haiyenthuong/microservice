@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.*;
  * REST Controller cho Payment Management.
  */
 @RestController
-@RequestMapping("/v1/payments")
+@RequestMapping("/payments")
 @Tag(name = "Payment Management", description = "Payment processing APIs")
 public class PaymentController {
 

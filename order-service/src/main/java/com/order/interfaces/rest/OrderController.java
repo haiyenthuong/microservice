@@ -20,7 +20,7 @@ import java.util.List;
  * REST Controller cho Order Management.
  */
 @RestController
-@RequestMapping("/v1/orders")
+@RequestMapping("/orders")
 @RequiredArgsConstructor
 @Tag(name = "Order Management", description = "Order management APIs")
 public class OrderController {

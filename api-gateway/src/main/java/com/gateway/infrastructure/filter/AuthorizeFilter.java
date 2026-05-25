@@ -33,7 +33,7 @@ import java.util.Map;
  * 5. Từ chối request nếu token không hợp lệ hoặc không có
  *
  * Cấu hình trong application.yml:
- * 
+ *
  * <pre>
  * spring.cloud.gateway.routes[0].filters[1] = AuthorizeFilter
  * </pre>

@@ -17,7 +17,19 @@
       "Bash(Select-Object -First 20 Name)",
       "Bash(xargs grep -l \"FeignClient\\\\|@FeignClient\")",
       "Bash(xargs grep -l \"payment\\\\|Payment\\\\|PaymentMethod\\\\|paymentMethod\")",
-      "Bash(mvn compile *)"
+      "Bash(mvn compile *)",
+      "Bash(tee auth-service.log)",
+      "Bash(findstr :8084)",
+      "Bash(tasklist)",
+      "Bash(findstr java *)",
+      "Bash(findstr :8080)",
+      "Bash(taskkill /F /PID 18536)",
+      "Bash(taskkill //F //PID 18536)",
+      "PowerShell(Get-NetTCPConnection -LocalPort 8084 -ErrorAction SilentlyContinue)",
+      "PowerShell(Get-NetTCPConnection -LocalPort 8080 -ErrorAction SilentlyContinue)",
+      "PowerShell(Get-NetTCPConnection -LocalPort 8084 -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force })",
+      "PowerShell(Start-Sleep -Seconds 20; $body = '{\"username\":\"admin\",\"password\":\"123456aA@\"}'; $response = Invoke-WebRequest -Uri \"http://localhost:8080/auth/login\" -Method POST -ContentType \"application/json\" -Body $body -UseBasicParsing; $response.Content)",
+      "PowerShell(Start-Sleep -Seconds 15; $body = '{\"username\":\"admin\",\"password\":\"123456aA@\"}'; $response = Invoke-WebRequest -Uri \"http://localhost:8080/auth/login\" -Method POST -ContentType \"application/json\" -Body $body -UseBasicParsing; Write-Host \"Status: $\\($response.StatusCode\\)\"; $response.Content)"
     ]
   }
 }
