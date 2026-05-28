@@ -27,7 +27,6 @@ public class OrderItemResponse {
     private BigDecimal discountAmount;
     private BigDecimal taxAmount;
     private BigDecimal totalPrice;
-    private String currency;
     private LocalDateTime createdDate;
     private LocalDateTime updatedDate;
 }

@@ -1,0 +1,334 @@
+package com.payment.application.service;
+
+import com.payment.domain.entity.VnPaymentTransactionLog;
+import com.payment.domain.enums.TransactionType;
+import com.payment.domain.repository.VnPaymentTransactionLogRepository;
+import com.payment.infrastructure.config.VnpayConfig;
+import com.payment.application.dto.*;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.util.*;
+
+/**
+ * VNPAY Payment Service
+ *
+ * Service xử lý các nghiệp vụ liên quan đến thanh toán VNPAY
+ * bao gồm:
+ * - Tạo URL thanh toán
+ * - Xử lý IPN callback
+ * - Query trạng thái giao dịch
+ * - Hoàn tiền
+ *
+ * @author Payment Service
+ * @version 1.0.0
+ */
+@Slf4j
+@Service
+@RequiredArgsConstructor
+public class VnpayService {
+
+    private final VnpayConfig vnpayConfig;
+    private final VnPaymentTransactionLogRepository transactionLogRepository;
+    private final com.payment.domain.repository.VnpIpnLogRepository ipnLogRepository;
+
+    /**
+     * Tạo URL thanh toán VNPAY cho đơn hàng
+     *
+     * @param request Thông tin tạo thanh toán
+     * @return URL thanh toán VNPAY
+     */
+    @Transactional
+    public CreatePaymentUrlResponse createPaymentUrl(CreatePaymentUrlRequest request) {
+        log.info("Creating VNPAY payment URL for order: {}", request.getOrderId());
+
+        // Tạo transaction log
+        VnPaymentTransactionLog transactionLog = buildTransactionLog(request);
+        transactionLog = transactionLogRepository.save(transactionLog);
+
+        // Tạo params cho VNPAY
+        Map<String, String> vnpayParams = createVnpayPaymentParams(transactionLog);
+
+        // Tạo payment URL
+        String paymentUrl = buildPaymentUrl(vnpayParams);
+
+        // Lưu request data
+        transactionLog.setRequestData(serializeMapToJson(vnpayParams));
+        transactionLog.setPaymentUrl(paymentUrl);
+        transactionLogRepository.save(transactionLog);
+
+        log.info("VNPAY payment URL created for order: {} | Order Code: {}",
+                request.getOrderId(), transactionLog.getOrderCode());
+
+        return CreatePaymentUrlResponse.builder()
+                .transactionId(transactionLog.id.toString())
+                .orderCode(transactionLog.getOrderCode())
+                .paymentUrl(paymentUrl)
+                .expiredAt(transactionLog.getExpiredAt())
+                .amount(transactionLog.getAmount())
+                .vnpAmount(transactionLog.getVnpAmount())
+                .build();
+    }
+
+    /**
+     * Xử lý IPN callback từ VNPAY
+     *
+     * @param ipnData Dữ liệu IPN từ VNPAY
+     * @return Kết quả xử lý IPN
+     */
+    @Transactional
+    public IpnResponse processIpn(Map<String, String> ipnData) {
+        log.info("Processing VNPAY IPN callback");
+
+        // Tạo IPN log
+        var ipnLog = com.payment.domain.entity.VnpIpnLog.builder()
+                .vnpTransactionNo(ipnData.get("vnp_TxnRef"))
+                .vnpBankCode(ipnData.get("vnp_BankCode"))
+                .vnpBankTranNo(ipnData.get("vnp_BankTranNo"))
+                .vnpCardType(ipnData.get("vnp_CardType"))
+                .vnpAmount(new BigDecimal(ipnData.get("vnp_Amount")))
+                .vnpResponseCode(ipnData.get("vnp_ResponseCode"))
+                .vnpTransactionStatus(ipnData.get("vnp_TransactionStatus"))
+                .vnpOrderInfo(ipnData.get("vnp_OrderInfo"))
+                .vnpPayDate(ipnData.get("vnp_PayDate"))
+                .vnpTmnCode(ipnData.get("vnp_TmnCode"))
+                .vnpSecureHash(ipnData.get("vnp_SecureHash"))
+                .rawData(serializeMapToJson(ipnData))
+                .build();
+
+        // Verify checksum
+        boolean isValid = verifyIpnChecksum(ipnData);
+        ipnLog.setIsValidChecksum(isValid);
+
+        if (isValid && "00".equals(ipnData.get("vnp_ResponseCode"))) {
+            // IPN thành công - cập nhật transaction log
+            String orderCode = extractOrderCodeFromOrderInfo(ipnData.get("vnp_OrderInfo"));
+            VnPaymentTransactionLog transactionLog = transactionLogRepository.findByOrderCode(orderCode)
+                    .orElseThrow(() -> new IllegalArgumentException("Transaction not found: " + orderCode));
+
+            transactionLog.markAsPaid(
+                    ipnData.get("vnp_BankCode"),
+                    ipnData.get("vnp_TxnRef"));
+
+            ipnLog.markAsVerified();
+            ipnLog.setPaymentTransactionLogId(transactionLog.id.toString());
+            ipnLogRepository.save(ipnLog);
+            transactionLogRepository.save(transactionLog);
+
+            log.info("VNPAY IPN processed successfully | Order Code: {} | VNP Transaction No: {}",
+                    orderCode, ipnData.get("vnp_TxnRef"));
+
+            return IpnResponse.success("IPN processed successfully");
+
+        } else {
+            // IPN thất bại
+            ipnLog.markAsVerificationFailed(isValid ? "Invalid checksum" : "Payment failed");
+            ipnLogRepository.save(ipnLog);
+            return IpnResponse.error("IPN processing failed");
+        }
+    }
+
+    /**
+     * Query trạng thái giao dịch
+     *
+     * @param orderCode Mã đơn hàng
+     * @return Thông tin giao dịch
+     */
+    public TransactionStatusResponse queryTransactionStatus(String orderCode) {
+        log.info("Querying VNPAY transaction status for order code: {}", orderCode);
+
+        VnPaymentTransactionLog transactionLog = transactionLogRepository.findByOrderCode(orderCode)
+                .orElseThrow(() -> new IllegalArgumentException("Transaction not found: " + orderCode));
+
+        // Nếu đã expired, mark as expired
+        if (transactionLog.getExpiredAt() != null
+                && transactionLog.getExpiredAt().isBefore(LocalDateTime.now())
+                && transactionLog.isPending()) {
+            transactionLog.markAsExpired();
+            transactionLogRepository.save(transactionLog);
+        }
+
+        return TransactionStatusResponse.builder()
+                .orderCode(transactionLog.getOrderCode())
+                .orderId(transactionLog.getOrdersId())
+                .status(transactionLog.getStatus())
+                .amount(transactionLog.getAmount())
+                .vnpAmount(transactionLog.getVnpAmount())
+                .bankCode(transactionLog.getBankCode())
+                .paidAt(transactionLog.getPaidAt())
+                .expiredAt(transactionLog.getExpiredAt())
+                .build();
+    }
+
+    /**
+     * Tạo params cho VNPAY payment request
+     */
+    private Map<String, String> createVnpayPaymentParams(VnPaymentTransactionLog transactionLog) {
+        Map<String, String> params = new LinkedHashMap<>();
+
+        params.put("vnp_Version", vnpayConfig.getVersion());
+        params.put("vnp_Command", vnpayConfig.getCommand());
+        params.put("vnp_TmnCode", vnpayConfig.getTmnCode());
+        params.put("vnp_Amount", transactionLog.getVnpAmount().toString());
+        params.put("vnp_CurrCode", vnpayConfig.getCurrency());
+        params.put("vnp_TxnRef", transactionLog.getOrderCode());
+        params.put("vnp_OrderInfo", transactionLog.getDescription() != null
+                ? transactionLog.getDescription()
+                : "Thanh toan don hang " + transactionLog.getOrderCode());
+        params.put("vnp_OrderType", "250000"); // Other payment types: 100000, 110000
+        params.put("vnp_Locale", vnpayConfig.getLocale());
+        params.put("vnp_ReturnUrl", vnpayConfig.getReturnUrl());
+        params.put("vnp_IpnUrl", vnpayConfig.getIpnUrl());
+
+        // Create date string
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmmss");
+        String createDate = sdf.format(new Date());
+        params.put("vnp_CreateDate", createDate);
+
+        return params;
+    }
+
+    /**
+     * Build payment URL với secure hash
+     */
+    private String buildPaymentUrl(Map<String, String> params) {
+        // Sort params alphabetically for hash calculation
+        TreeMap<String, String> sortedParams = new TreeMap<>(params);
+        sortedParams.remove("vnp_SecureHash");
+
+        // Build query string
+        StringBuilder query = new StringBuilder();
+        for (Map.Entry<String, String> entry : sortedParams.entrySet()) {
+            if (query.length() > 0) {
+                query.append("&");
+            }
+            query.append(entry.getKey()).append("=").append(entry.getValue());
+        }
+
+        // Calculate secure hash
+        String hashData = query.toString();
+        String vnpSecureHash = hmacSHA512(hashData, vnpayConfig.getHashSecret());
+
+        // Add hash to params
+        StringBuilder finalQuery = new StringBuilder(query);
+        finalQuery.append("&vnp_SecureHash=").append(vnpSecureHash);
+
+        return vnpayConfig.getPaymentUrl() + "?" + finalQuery.toString();
+    }
+
+    /**
+     * Verify IPN checksum
+     */
+    private boolean verifyIpnChecksum(Map<String, String> ipnData) {
+        String vnpSecureHash = ipnData.get("vnp_SecureHash");
+        if (vnpSecureHash == null || vnpSecureHash.isEmpty()) {
+            return false;
+        }
+
+        // Remove vnp_SecureHash from data for hash calculation
+        Map<String, String> data = new LinkedHashMap<>(ipnData);
+        data.remove("vnp_SecureHash");
+
+        // Sort alphabetically
+        TreeMap<String, String> sortedData = new TreeMap<>(data);
+
+        // Build hash data string
+        StringBuilder hashData = new StringBuilder();
+        for (Map.Entry<String, String> entry : sortedData.entrySet()) {
+            if (hashData.length() > 0) {
+                hashData.append("&");
+            }
+            hashData.append(entry.getKey()).append("=").append(entry.getValue());
+        }
+
+        String calculatedHash = hmacSHA512(hashData.toString(), vnpayConfig.getHashSecret());
+
+        return vnpSecureHash.equals(calculatedHash);
+    }
+
+    /**
+     * HMAC SHA512 for VNPAY secure hash
+     */
+    private String hmacSHA512(String data, String key) {
+        try {
+            javax.crypto.Mac mac = javax.crypto.Mac.getInstance("HmacSHA512");
+            javax.crypto.spec.SecretKeySpec secretKey = new javax.crypto.spec.SecretKeySpec(
+                    key.getBytes("UTF-8"), "HmacSHA512");
+            mac.init(secretKey);
+            byte[] hash = mac.doFinal(data.getBytes("UTF-8"));
+
+            // Convert to hex string
+            StringBuilder hexString = new StringBuilder();
+            for (byte b : hash) {
+                String hex = Integer.toHexString(0xff & b);
+                if (hex.length() == 1) {
+                    hexString.append('0');
+                }
+                hexString.append(hex);
+            }
+            return hexString.toString();
+
+        } catch (Exception e) {
+            log.error("Error calculating VNPAY hash", e);
+            throw new RuntimeException("Error calculating VNPAY hash", e);
+        }
+    }
+
+    /**
+     * Build transaction log from request
+     */
+    private VnPaymentTransactionLog buildTransactionLog(CreatePaymentUrlRequest request) {
+        BigDecimal amount = request.getAmount() != null ? request.getAmount() : BigDecimal.ZERO;
+        // VNPAY amount = amount * 100 (convert to smallest currency unit)
+        BigDecimal vnpAmount = amount.multiply(BigDecimal.valueOf(100));
+
+        LocalDateTime expiredAt = LocalDateTime.now().plusMinutes(vnpayConfig.getTimeoutMinutes());
+
+        return VnPaymentTransactionLog.builder()
+                .transactionType(TransactionType.PAYMENT)
+                .ordersId(request.getOrderId())
+                .userId(request.getUserId())
+                .amount(amount)
+                .vnpAmount(vnpAmount)
+                .status("PENDING")
+                .paymentMethod("VNPAY")
+                .vnpTmnCode(vnpayConfig.getTmnCode())
+                .returnUrl(vnpayConfig.getReturnUrl())
+                .ipAddress(request.getIpAddress())
+                .locale(vnpayConfig.getLocale())
+                .expiredAt(expiredAt)
+                .description(request.getDescription())
+                .build();
+    }
+
+    /**
+     * Extract order code from order info
+     */
+    private String extractOrderCodeFromOrderInfo(String orderInfo) {
+        if (orderInfo == null || orderInfo.isEmpty()) {
+            return null;
+        }
+        // Order info format: "Thanh toan don hang YYYYMMDDXXXXXXXX"
+        // Extract the code part
+        String[] parts = orderInfo.split(" ");
+        return parts.length > 1 ? parts[parts.length - 1] : orderInfo;
+    }
+
+    /**
+     * Serialize map to JSON string
+     */
+    private String serializeMapToJson(Map<String, String> map) {
+        try {
+            com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+            return mapper.writeValueAsString(map);
+        } catch (Exception e) {
+            log.error("Error serializing map to JSON", e);
+            return "{}";
+        }
+    }
+}

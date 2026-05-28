@@ -5,23 +5,23 @@ package com.order.domain.model;
  * Enum đại diện cho trạng thái thanh toán của đơn hàng.
  */
 public enum PaymentStatus {
-    PENDING(0, "Pending", "Chờ thanh toán"),
-    PROCESSING(1, "Processing", "Đang xử lý"),
-    PAID(2, "Paid", "Đã thanh toán"),
-    FAILED(3, "Failed", "Thanh toán thất bại"),
-    REFUNDED(4, "Refunded", "Đã hoàn tiền");
+    PENDING(0L, "Pending", "Chờ thanh toán"),
+    PROCESSING(1L, "Processing", "Đang xử lý"),
+    PAID(2L, "Paid", "Đã thanh toán"),
+    FAILED(3L, "Failed", "Thanh toán thất bại"),
+    REFUNDED(4L, "Refunded", "Đã hoàn tiền");
 
-    private final Integer value;
+    private final Long value;
     private final String name;
     private final String description;
 
-    PaymentStatus(Integer value, String name, String description) {
+    PaymentStatus(Long value, String name, String description) {
         this.value = value;
         this.name = name;
         this.description = description;
     }
 
-    public Integer getValue() {
+    public Long getValue() {
         return value;
     }
 
@@ -69,6 +69,25 @@ public enum PaymentStatus {
             }
         }
         throw new IllegalArgumentException("Unknown PaymentStatus name: " + name);
+    }
+
+    /**
+     * Lấy PaymentStatus từ tên (String).
+     *
+     * @param status tên của payment status
+     * @return PaymentStatus enum
+     * @throws IllegalArgumentException nếu tên không hợp lệ
+     */
+    public static PaymentStatus fromValue(Long status) {
+        if (status == null) {
+            return PENDING;
+        }
+        for (PaymentStatus paymentStatus : PaymentStatus.values()) {
+            if (paymentStatus.value.equals(status)) {
+                return paymentStatus;
+            }
+        }
+        throw new IllegalArgumentException("Unknown PaymentStatus name: " + status);
     }
 
     /**

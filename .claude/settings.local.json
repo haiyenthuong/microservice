@@ -29,7 +29,11 @@
       "PowerShell(Get-NetTCPConnection -LocalPort 8080 -ErrorAction SilentlyContinue)",
       "PowerShell(Get-NetTCPConnection -LocalPort 8084 -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force })",
       "PowerShell(Start-Sleep -Seconds 20; $body = '{\"username\":\"admin\",\"password\":\"123456aA@\"}'; $response = Invoke-WebRequest -Uri \"http://localhost:8080/auth/login\" -Method POST -ContentType \"application/json\" -Body $body -UseBasicParsing; $response.Content)",
-      "PowerShell(Start-Sleep -Seconds 15; $body = '{\"username\":\"admin\",\"password\":\"123456aA@\"}'; $response = Invoke-WebRequest -Uri \"http://localhost:8080/auth/login\" -Method POST -ContentType \"application/json\" -Body $body -UseBasicParsing; Write-Host \"Status: $\\($response.StatusCode\\)\"; $response.Content)"
+      "PowerShell(Start-Sleep -Seconds 15; $body = '{\"username\":\"admin\",\"password\":\"123456aA@\"}'; $response = Invoke-WebRequest -Uri \"http://localhost:8080/auth/login\" -Method POST -ContentType \"application/json\" -Body $body -UseBasicParsing; Write-Host \"Status: $\\($response.StatusCode\\)\"; $response.Content)",
+      "Bash(mvn -f d:/1.Project/microservice/payment-service/pom.xml clean compile -q)",
+      "Bash(./mvnw clean *)",
+      "Bash(mvn -f d:/1.Project/microservice/order-service/pom.xml clean compile -q)",
+      "Bash(mvn -f d:/1.Project/microservice/auth-service/pom.xml clean compile -q)"
     ]
   }
 }

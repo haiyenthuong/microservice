@@ -46,8 +46,8 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable()) // Disable CSRF cho stateless APIs
                 .authorizeHttpRequests(auth -> auth
-                        // Public endpoints (đã strip prefix tại gateway)
-                        .requestMatchers("/login", "/register").permitAll()
+                        // Public endpoints
+                        .requestMatchers("/auth/login", "/auth/register").permitAll()
                         .requestMatchers("/actuator/**").permitAll()
                         .requestMatchers("/swagger-ui/**", "/api-docs/**").permitAll()
                         // All other endpoints require authentication

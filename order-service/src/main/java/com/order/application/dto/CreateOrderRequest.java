@@ -34,20 +34,20 @@ public class CreateOrderRequest {
      * Optional - nếu không provided, sẽ dùng username từ SecurityHelper
      */
     @Size(max = 200, message = "Customer name must not exceed 200 characters")
-    private String customerName;
+    private String custName;
 
     /**
      * Email khách hàng
      */
     @Email(message = "Invalid email format")
     @Size(max = 100, message = "Email must not exceed 100 characters")
-    private String customerEmail;
+    private String custEmail;
 
     /**
      * Số điện thoại khách hàng
      */
     @Size(max = 20, message = "Phone number must not exceed 20 characters")
-    private String customerPhone;
+    private String custPhone;
 
     /**
      * Danh sách sản phẩm trong đơn hàng
@@ -63,14 +63,7 @@ public class CreateOrderRequest {
      */
     @NotBlank(message = "Shipping address is required")
     @Size(max = 500, message = "Shipping address must not exceed 500 characters")
-    private String shippingAddress;
-
-    /**
-     * Địa chỉ billing (địa chỉ xuất hóa đơn)
-     * Optional - nếu không provided, sẽ dùng shipping address
-     */
-    @Size(max = 500, message = "Billing address must not exceed 500 characters")
-    private String billingAddress;
+    private String shipAddr;
 
     /**
      * Số tiền giảm giá (đơn hàng level)
@@ -80,38 +73,16 @@ public class CreateOrderRequest {
     private BigDecimal discountAmount;
 
     /**
-     * Số tiền thuế (đơn hàng level)
-     * Áp dụng cho tổng đơn hàng
-     */
-    @DecimalMin(value = "0.0", message = "Tax amount must be greater than or equal to 0")
-    private BigDecimal taxAmount;
-
-    /**
      * Phí vận chuyển
      */
-    @DecimalMin(value = "0.0", message = "Shipping amount must be greater than or equal to 0")
-    private BigDecimal shippingAmount;
-
-    /**
-     * Currency code (USD, VND, EUR, etc.)
-     * Default: USD
-     */
-    @Size(max = 3, message = "Currency code must not exceed 3 characters")
-    private String currency;
-
-    /**
-     * Phương thức thanh toán
-     * Required - CREDIT_CARD, PAYPAL, BANK_TRANSFER, CASH_ON_DELIVERY, etc.
-     */
-    @NotBlank(message = "Payment method is required")
-    @Size(max = 50, message = "Payment method must not exceed 50 characters")
-    private String paymentMethod;
+    @DecimalMin(value = "0.0", message = "Shipping fee must be greater than or equal to 0")
+    private BigDecimal shipFee;
 
     /**
      * Ghi chú của khách hàng
      */
-    @Size(max = 1000, message = "Customer notes must not exceed 1000 characters")
-    private String customerNotes;
+    @Size(max = 1000, message = "Notes must not exceed 1000 characters")
+    private String notes;
 
     /**
      * DTO cho order item trong request tạo đơn hàng.
@@ -181,25 +152,6 @@ public class CreateOrderRequest {
          */
         @DecimalMin(value = "0.0", message = "Tax amount must be greater than or equal to 0")
         private BigDecimal taxAmount;
-
-        /**
-         * Currency code cho item
-         * Default: USD (hoặc sẽ inherit từ order level currency)
-         */
-        @Size(max = 3, message = "Currency code must not exceed 3 characters")
-        private String currency;
-    }
-
-    /**
-     * Helper method để get billing address
-     * Trả về billing address nếu có, ngược lại trả về shipping address
-     *
-     * @return billing address hoặc shipping address
-     */
-    public String getEffectiveBillingAddress() {
-        return (billingAddress != null && !billingAddress.trim().isEmpty())
-                ? billingAddress
-                : shippingAddress;
     }
 
     /**
@@ -209,21 +161,9 @@ public class CreateOrderRequest {
      * @return customer name hoặc "Guest Customer"
      */
     public String getEffectiveCustomerName() {
-        return (customerName != null && !customerName.trim().isEmpty())
-                ? customerName
+        return (custName != null && !custName.trim().isEmpty())
+                ? custName
                 : "Guest Customer";
-    }
-
-    /**
-     * Helper method để get currency
-     * Trả về currency nếu có, ngược lại trả về default "USD"
-     *
-     * @return currency code hoặc "USD"
-     */
-    public String getEffectiveCurrency() {
-        return (currency != null && !currency.trim().isEmpty())
-                ? currency
-                : "USD";
     }
 
     /**
@@ -250,11 +190,7 @@ public class CreateOrderRequest {
             }
         }
 
-        if (paymentMethod == null || paymentMethod.trim().isEmpty()) {
-            throw new IllegalArgumentException("Payment method is required");
-        }
-
-        if (shippingAddress == null || shippingAddress.trim().isEmpty()) {
+        if (shipAddr == null || shipAddr.trim().isEmpty()) {
             throw new IllegalArgumentException("Shipping address is required");
         }
     }

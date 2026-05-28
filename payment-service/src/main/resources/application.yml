@@ -203,3 +203,18 @@ payment:
     success-rate: 0.8  # 80% success rate
     processing-time-ms: 2000  # Simulated processing time
     transaction-id-prefix: TXN-
+
+# VNPAY Payment Gateway Configuration
+vnpay:
+  tmn-code: VNPAYMENT012
+  hash-secret: FQMXTYOQNFSGHVMUMUMPUXNMQZHHHHHHHHHHHHHH
+  payment-url: https://sandbox.vnpay.vn/vpcpay.html
+  query-url: https://sandbox.vnpay.vn/transaction.html
+  return-url: http://localhost:8080/payments/vnpay/return
+  ipn-url: http://localhost:8083/payments/vnpay/ipn
+  timeout-minutes: 15
+  locale: vn
+  currency: VND
+  version: 2.1.0
+  command: pay
+  sandbox: true

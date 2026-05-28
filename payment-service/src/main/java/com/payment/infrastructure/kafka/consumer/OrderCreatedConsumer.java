@@ -223,9 +223,9 @@ public class OrderCreatedConsumer {
             : PaymentProcessedEvent.EVENT_TYPE_FAILED;
 
         return new PaymentProcessedEvent(
-            UUID.randomUUID().toString(),           // eventId
+            UUID.randomUUID().toString(),       // eventId
             payment.id.toString(),              // aggregateId (payment ID)
-            java.time.Instant.now(),                 // timestamp
+            java.time.Instant.now(),            // timestamp
             originalEvent.customerId,           // userId
             originalEvent.traceId,              // traceId
             originalEvent.orderId,              // orderId
@@ -235,7 +235,7 @@ public class OrderCreatedConsumer {
             payment.currency,                   // currency
             payment.paymentMethod.getCode(),    // paymentMethod
             payment.paymentProvider.getCode(),  // paymentProvider
-            success                                  // success
+            success                             // success
         );
     }
 }

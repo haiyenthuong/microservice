@@ -6,7 +6,6 @@ import com.order.application.dto.OrderResponse;
 import com.order.domain.model.Order;
 import com.order.domain.model.OrderItem;
 import com.order.domain.model.OrderStatus;
-import com.order.domain.model.PaymentStatus;
 import com.order.domain.repository.OrderRepository;
 import com.order.infrastructure.helper.SecurityHelper;
 import com.order.infrastructure.kafka.event.OrderCreatedEvent;
@@ -66,7 +65,7 @@ public class CreateOrderCommand implements ICommand {
      *
      * @param request DTO chứa thông tin order
      * @return OrderResponse với status PENDING (payment sẽ được xử lý async)
-     * @throws IllegalStateException nếu user chưa authenticated
+     * @throws IllegalStateException    nếu user chưa authenticated
      * @throws IllegalArgumentException nếu request không hợp lệ
      */
     @Transactional
@@ -74,7 +73,8 @@ public class CreateOrderCommand implements ICommand {
         // Validate authentication
         securityHelper.requireAuthenticated();
 
-        // Lấy current user ID từ SecurityHelper (đã set bởi UserHeaderInterceptor từ Gateway)
+        // Lấy current user ID từ SecurityHelper (đã set bởi UserHeaderInterceptor từ
+        // Gateway)
         String currentUserId = securityHelper.getCurrentUserId();
         String currentUsername = securityHelper.getCurrentUsername();
 
@@ -96,12 +96,11 @@ public class CreateOrderCommand implements ICommand {
         // Save order xuống database (trong transaction)
         Order savedOrder = orderRepository.save(order);
 
-        log.info("Order created successfully: {} | Order Number: {} | Status: {} | Final Amount: {} {}",
+        log.info("Order created successfully: {} | Order Number: {} | Status: {} | Amount: {}",
                 savedOrder.getId(),
-                savedOrder.getOrderNumber(),
+                savedOrder.getOrderCode(),
                 savedOrder.getOrderStatus().getName(),
-                savedOrder.getFinalAmount(),
-                savedOrder.getCurrency());
+                savedOrder.getAmount());
 
         // Publish OrderCreatedEvent SAU KHI transaction commit
         // Sử dụng TransactionSynchronization để đảm bảo event chỉ được publish
@@ -128,10 +127,6 @@ public class CreateOrderCommand implements ICommand {
             throw new IllegalArgumentException("Order items cannot be empty");
         }
 
-        if (request.getPaymentMethod() == null || request.getPaymentMethod().trim().isEmpty()) {
-            throw new IllegalArgumentException("Payment method is required");
-        }
-
         // Validate các items
         for (CreateOrderRequest.OrderItemRequest itemRequest : request.getItems()) {
             if (itemRequest.getProductId() == null || itemRequest.getProductId().trim().isEmpty()) {
@@ -151,8 +146,8 @@ public class CreateOrderCommand implements ICommand {
     /**
      * Build Order entity từ CreateOrderRequest
      *
-     * @param request CreateOrderRequest
-     * @param userId User ID từ SecurityHelper
+     * @param request  CreateOrderRequest
+     * @param userId   User ID từ SecurityHelper
      * @param username Username từ SecurityHelper
      * @return Order entity (chưa save)
      */
@@ -162,42 +157,27 @@ public class CreateOrderCommand implements ICommand {
                 ? request.getDiscountAmount()
                 : BigDecimal.ZERO;
 
-        BigDecimal taxAmount = request.getTaxAmount() != null
-                ? request.getTaxAmount()
+        BigDecimal shipFee = request.getShipFee() != null
+                ? request.getShipFee()
                 : BigDecimal.ZERO;
-
-        BigDecimal shippingAmount = request.getShippingAmount() != null
-                ? request.getShippingAmount()
-                : BigDecimal.ZERO;
-
-        String currency = request.getCurrency() != null && !request.getCurrency().trim().isEmpty()
-                ? request.getCurrency()
-                : "USD";
 
         // Build Order entity
         return Order.builder()
                 // Customer info
                 .userId(userId)
-                .customerName(request.getCustomerName() != null ? request.getCustomerName().trim() : username)
-                .customerEmail(request.getCustomerEmail() != null ? request.getCustomerEmail().trim() : null)
-                .customerPhone(request.getCustomerPhone() != null ? request.getCustomerPhone().trim() : null)
+                .custName(request.getCustName() != null ? request.getCustName().trim() : username)
+                .custEmail(request.getCustEmail() != null ? request.getCustEmail().trim() : null)
+                .custPhone(request.getCustPhone() != null ? request.getCustPhone().trim() : null)
 
                 // Address
-                .shippingAddress(request.getShippingAddress() != null ? request.getShippingAddress().trim() : null)
-                .billingAddress(request.getBillingAddress() != null ? request.getBillingAddress().trim() : null)
+                .shipAddr(request.getShipAddr() != null ? request.getShipAddr().trim() : null)
 
                 // Amounts
                 .discountAmount(discountAmount)
-                .taxAmount(taxAmount)
-                .shippingAmount(shippingAmount)
-                .currency(currency)
+                .shipFee(shipFee)
 
                 // Notes
-                .customerNotes(request.getCustomerNotes() != null ? request.getCustomerNotes().trim() : null)
-
-                // Payment info - Initial status là PENDING
-                .paymentStatus(PaymentStatus.PENDING.getValue())
-                .paymentMethod(request.getPaymentMethod().trim())
+                .notes(request.getNotes() != null ? request.getNotes().trim() : null)
 
                 // Order status - Initial status là PENDING
                 .status(OrderStatus.PENDING.getValue())
@@ -212,12 +192,11 @@ public class CreateOrderCommand implements ICommand {
      * Build OrderItem entities từ CreateOrderRequest
      *
      * @param request CreateOrderRequest
-     * @param order Order entity (cha)
+     * @param order   Order entity (cha)
      * @return List của OrderItem entities
      */
     private List<OrderItem> buildOrderItems(CreateOrderRequest request, Order order) {
         List<OrderItem> items = new ArrayList<>();
-        String orderCurrency = order.getCurrency();
 
         for (CreateOrderRequest.OrderItemRequest itemRequest : request.getItems()) {
             // Normalize item fields
@@ -229,21 +208,17 @@ public class CreateOrderCommand implements ICommand {
                     ? itemRequest.getTaxAmount()
                     : BigDecimal.ZERO;
 
-            String currency = itemRequest.getCurrency() != null && !itemRequest.getCurrency().trim().isEmpty()
-                    ? itemRequest.getCurrency()
-                    : orderCurrency;
-
             // Build OrderItem entity
             OrderItem item = OrderItem.builder()
                     .productId(itemRequest.getProductId().trim())
-                    .productName(itemRequest.getProductName() != null ? itemRequest.getProductName().trim() : "Unknown Product")
+                    .productName(itemRequest.getProductName() != null ? itemRequest.getProductName().trim()
+                            : "Unknown Product")
                     .productSku(itemRequest.getProductSku() != null ? itemRequest.getProductSku().trim() : null)
                     .productImage(itemRequest.getProductImage() != null ? itemRequest.getProductImage().trim() : null)
                     .quantity(itemRequest.getQuantity())
                     .unitPrice(itemRequest.getUnitPrice())
                     .discountAmount(discountAmount)
                     .taxAmount(taxAmount)
-                    .currency(currency)
                     // Audit info
                     .createdBy(order.getCreatedBy())
                     .updatedBy(order.getUpdatedBy())
@@ -263,14 +238,9 @@ public class CreateOrderCommand implements ICommand {
      *
      * Logic tính toán:
      * 1. Items Total = Sum của (quantity * unitPrice) cho tất cả items
-     * 2. Subtotal = Items Total
-     * 3. Total Amount = Subtotal
-     * 4. Discount Amount = Sum của discount amounts (từ order level)
-     * 5. Tax Amount = Sum của tax amounts (từ order level)
-     * 6. Shipping Amount = Shipping fee (từ order level)
-     * 7. Final Amount = Total Amount - Discount Amount + Tax Amount + Shipping Amount
+     * 2. Amount = Items Total + Ship Fee - Discount Amount
      *
-     * Lưu ý: Mỗi OrderItem cũng có thể có riêng discount và tax,
+     * Lưu ý: Mỗi OrderItem có thể có riêng discount và tax,
      * và totalPrice của item được tính bởi item.calculateTotalPrice()
      *
      * @param order Order entity cần calculate totals
@@ -278,7 +248,6 @@ public class CreateOrderCommand implements ICommand {
     private void calculateOrderTotals(Order order) {
         BigDecimal itemsTotal = BigDecimal.ZERO;
         BigDecimal itemsDiscountTotal = BigDecimal.ZERO;
-        BigDecimal itemsTaxTotal = BigDecimal.ZERO;
 
         // Calculate totals từ items
         for (OrderItem item : order.getItems()) {
@@ -292,56 +261,41 @@ public class CreateOrderCommand implements ICommand {
 
             itemsTotal = itemsTotal.add(itemTotalPrice);
 
-            // Accumulate item-level discounts và taxes
+            // Accumulate item-level discounts
             if (item.getDiscountAmount() != null) {
                 itemsDiscountTotal = itemsDiscountTotal.add(item.getDiscountAmount());
             }
-
-            if (item.getTaxAmount() != null) {
-                itemsTaxTotal = itemsTaxTotal.add(item.getTaxAmount());
-            }
         }
-
-        // Set total amount (items total)
-        order.setTotalAmount(itemsTotal);
 
         // Get order-level amounts
         BigDecimal orderDiscount = order.getDiscountAmount() != null
                 ? order.getDiscountAmount()
                 : BigDecimal.ZERO;
 
-        BigDecimal orderTax = order.getTaxAmount() != null
-                ? order.getTaxAmount()
-                : BigDecimal.ZERO;
-
-        BigDecimal orderShipping = order.getShippingAmount() != null
-                ? order.getShippingAmount()
+        BigDecimal orderShipFee = order.getShipFee() != null
+                ? order.getShipFee()
                 : BigDecimal.ZERO;
 
         // Combine item-level và order-level amounts
         BigDecimal totalDiscount = itemsDiscountTotal.add(orderDiscount);
-        BigDecimal totalTax = itemsTaxTotal.add(orderTax);
 
         // Calculate final amount
-        // Final = Items Total - Total Discount + Total Tax + Shipping
-        BigDecimal finalAmount = itemsTotal
-                .subtract(totalDiscount)
-                .add(totalTax)
-                .add(orderShipping);
+        // Amount = Items Total + Ship Fee - Total Discount
+        BigDecimal amount = itemsTotal.add(orderShipFee).subtract(totalDiscount);
 
-        // Ensure final amount không negative
-        if (finalAmount.compareTo(BigDecimal.ZERO) < 0) {
-            finalAmount = BigDecimal.ZERO;
+        // Ensure amount không negative
+        if (amount.compareTo(BigDecimal.ZERO) < 0) {
+            amount = BigDecimal.ZERO;
         }
 
         // Round to 2 decimal places (standard cho currency)
-        finalAmount = finalAmount.setScale(2, RoundingMode.HALF_UP);
+        amount = amount.setScale(2, RoundingMode.HALF_UP);
 
         // Set values to order
-        order.setFinalAmount(finalAmount);
+        order.setAmount(amount);
 
-        log.debug("Order totals calculated - Items Total: {} | Discount: {} | Tax: {} | Shipping: {} | Final: {}",
-                itemsTotal, totalDiscount, totalTax, orderShipping, finalAmount);
+        log.debug("Order totals calculated - Items Total: {} | Discount: {} | Ship Fee: {} | Amount: {}",
+                itemsTotal, totalDiscount, orderShipFee, amount);
     }
 
     /**
@@ -354,7 +308,7 @@ public class CreateOrderCommand implements ICommand {
      * - Nếu transaction rollback → event KHÔNG được publish
      * - Nếu transaction commit → event được publish
      *
-     * @param order Order entity đã được save
+     * @param order  Order entity đã được save
      * @param userId User ID tạo order
      */
     private void publishOrderCreatedEventAfterTransactionCommit(Order order, String userId) {
@@ -391,7 +345,7 @@ public class CreateOrderCommand implements ICommand {
     /**
      * Build OrderCreatedEvent từ Order entity
      *
-     * @param order Order entity
+     * @param order  Order entity
      * @param userId User ID
      * @return OrderCreatedEvent
      */
@@ -407,24 +361,20 @@ public class CreateOrderCommand implements ICommand {
         // Build event sử dụng builder pattern
         return OrderCreatedEvent.builder()
                 .eventId(UUID.randomUUID().toString())
-                .aggregateId(order.getId())  // Order ID là aggregate ID
+                .aggregateId(order.getId()) // Order ID là aggregate ID
                 .timestamp(Instant.now())
                 .userId(userId)
                 .traceId(traceId)
-                .orderNumber(order.getOrderNumber())
+                .orderNumber(order.getOrderCode())
                 .customerId(order.getUserId())
-                .customerName(order.getCustomerName())
-                .customerEmail(order.getCustomerEmail())
-                .customerPhone(order.getCustomerPhone())
-                .shippingAddress(order.getShippingAddress())
+                .customerName(order.getCustName())
+                .customerEmail(order.getCustEmail())
+                .customerPhone(order.getCustPhone())
+                .shippingAddress(order.getShipAddr())
                 .items(itemDtos)
-                .totalAmount(order.getTotalAmount())
+                .amount(order.getAmount())
                 .discountAmount(order.getDiscountAmount())
-                .taxAmount(order.getTaxAmount())
-                .shippingAmount(order.getShippingAmount())
-                .finalAmount(order.getFinalAmount())
-                .currency(order.getCurrency())
-                .paymentMethod(order.getPaymentMethod())
+                .shipFee(order.getShipFee())
                 .build();
     }
 
@@ -445,8 +395,7 @@ public class CreateOrderCommand implements ICommand {
                 item.getDiscountAmount(),
                 item.getTaxAmount(),
                 item.getTotalPrice(),
-                item.getCurrency()
-        );
+                "VND"); // Default currency for VNPAY payment
     }
 
     /**
@@ -457,7 +406,6 @@ public class CreateOrderCommand implements ICommand {
      */
     private OrderResponse mapToOrderResponse(Order order) {
         OrderStatus status = order.getOrderStatus();
-        PaymentStatus paymentStatus = order.getPaymentStatus();
 
         List<OrderItemResponse> itemResponses = order.getItems().stream()
                 .map(this::mapToOrderItemResponse)
@@ -465,36 +413,22 @@ public class CreateOrderCommand implements ICommand {
 
         return OrderResponse.builder()
                 .id(order.getId())
-                .orderNumber(order.getOrderNumber())
+                .orderNumber(order.getOrderCode())
                 .userId(order.getUserId())
-                .customerName(order.getCustomerName())
-                .customerEmail(order.getCustomerEmail())
-                .customerPhone(order.getCustomerPhone())
+                .custName(order.getCustName())
+                .custEmail(order.getCustEmail())
+                .custPhone(order.getCustPhone())
                 .status(order.getStatus())
                 .statusName(status.getName())
                 .statusDescription(status.getDescription())
-                .totalAmount(order.getTotalAmount())
+                .amount(order.getAmount())
                 .discountAmount(order.getDiscountAmount())
-                .taxAmount(order.getTaxAmount())
-                .shippingAmount(order.getShippingAmount())
-                .finalAmount(order.getFinalAmount())
-                .currency(order.getCurrency())
-                .shippingAddress(order.getShippingAddress())
-                .billingAddress(order.getBillingAddress())
-                .customerNotes(order.getCustomerNotes())
-                .adminNotes(order.getAdminNotes())
-                .orderDate(order.getOrderDate())
-                .confirmedDate(order.getConfirmedDate())
+                .shipFee(order.getShipFee())
+                .shipAddr(order.getShipAddr())
+                .notes(order.getNotes())
                 .shippedDate(order.getShippedDate())
                 .deliveredDate(order.getDeliveredDate())
                 .cancelledDate(order.getCancelledDate())
-                .paymentStatus(order.getPaymentStatus().getValue())
-                .paymentStatusName(paymentStatus.getName())
-                .paymentStatusDescription(paymentStatus.getDescription())
-                .paymentMethod(order.getPaymentMethod())
-                .transactionId(order.getTransactionId())
-                .paymentDate(order.getPaymentDate())
-                .paymentFailureReason(order.getPaymentFailureReason())
                 .items(itemResponses)
                 .createdBy(order.getCreatedBy())
                 .updatedBy(order.getUpdatedBy())
@@ -521,7 +455,6 @@ public class CreateOrderCommand implements ICommand {
                 .discountAmount(item.getDiscountAmount())
                 .taxAmount(item.getTaxAmount())
                 .totalPrice(item.getTotalPrice())
-                .currency(item.getCurrency())
                 .createdDate(item.getCreatedDate())
                 .updatedDate(item.getUpdatedDate())
                 .build();

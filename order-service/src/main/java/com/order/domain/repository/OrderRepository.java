@@ -42,12 +42,12 @@ public interface OrderRepository extends JpaRepository<Order, String> {
     List<Order> findByUserId(String userId);
 
     /**
-     * Tìm đơn hàng theo user ID, sắp xếp theo ngày đặt giảm dần.
+     * Tìm đơn hàng theo user ID, sắp xếp theo ngày tạo giảm dần.
      *
      * @param userId ID người dùng
-     * @return danh sách đơn hàng sắp xếp theo ngày đặt giảm dần
+     * @return danh sách đơn hàng sắp xếp theo ngày tạo giảm dần
      */
-    List<Order> findByUserIdOrderByOrderDateDesc(String userId);
+    List<Order> findByUserIdOrderByCreatedDateDesc(String userId);
 
     /**
      * Tìm tất cả đơn hàng theo trạng thái.
@@ -73,17 +73,17 @@ public interface OrderRepository extends JpaRepository<Order, String> {
      * @param keyword từ khóa tìm kiếm
      * @return danh sách đơn hàng khớp
      */
-    @Query("SELECT o FROM Order o WHERE o.orderNumber LIKE %:keyword% OR o.customerName LIKE %:keyword%")
+    @Query("SELECT o FROM Order o WHERE o.orderNumber LIKE %:keyword% OR o.custName LIKE %:keyword%")
     List<Order> searchOrders(@Param("keyword") String keyword);
 
     /**
-     * Tìm đơn hàng theo khoảng ngày.
+     * Tìm đơn hàng theo khoảng ngày tạo.
      *
      * @param startDate ngày bắt đầu
      * @param endDate ngày kết thúc
      * @return danh sách đơn hàng
      */
-    @Query("SELECT o FROM Order o WHERE o.orderDate BETWEEN :startDate AND :endDate")
+    @Query("SELECT o FROM Order o WHERE o.createdDate BETWEEN :startDate AND :endDate")
     List<Order> findByDateRange(@Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate);
 
     /**
@@ -92,7 +92,7 @@ public interface OrderRepository extends JpaRepository<Order, String> {
      * @param email email khách hàng
      * @return danh sách đơn hàng
      */
-    List<Order> findByCustomerEmail(String email);
+    List<Order> findByCustEmail(String email);
 
     /**
      * Đếm đơn hàng theo trạng thái.

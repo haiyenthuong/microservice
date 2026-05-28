@@ -5,13 +5,13 @@ package com.order.domain.model;
  * Enum đại diện cho trạng thái của đơn hàng.
  */
 public enum OrderStatus {
-    PENDING(0, "Pending", "Đơn hàng chờ xử lý"),
-    CONFIRMED(1, "Confirmed", "Đơn hàng đã xác nhận"),
-    PROCESSING(2, "Processing", "Đơn hàng đang xử lý"),
-    SHIPPED(3, "Shipped", "Đơn hàng đã giao"),
-    DELIVERED(4, "Delivered", "Đơn hàng đã giao thành công"),
-    CANCELLED(5, "Cancelled", "Đơn hàng đã hủy"),
-    REFUNDED(6, "Refunded", "Đơn hàng đã hoàn tiền");
+    PENDING(0, "Pending", "Chờ xử lý"),
+    CONFIRMED(1, "Confirmed", "Chờ xác nhận"),
+    PROCESSING(2, "Processing", "Đang xử lý"),
+    SHIPPED(3, "Shipped", "Đang giao"),
+    DELIVERED(4, "Delivered", "Đã giao"),
+    CANCELLED(5, "Cancelled", "Đã hủy"),
+    REFUNDED(6, "Refunded", "Đã hoàn tiền");
 
     private final Integer value;
     private final String name;

@@ -23,7 +23,7 @@ public class UpdatePaymentStatusCommand implements ICommand {
     /**
      * Execute command để cập nhật trạng thái thanh toán.
      *
-     * @param orderId ID của đơn hàng
+     * @param orderId       ID của đơn hàng
      * @param paymentStatus trạng thái thanh toán (PAID, FAILED)
      * @param transactionId ID giao dịch (nếu có)
      * @param failureReason lý do thất bại (nếu có)

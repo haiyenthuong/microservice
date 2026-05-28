@@ -27,59 +27,42 @@ import java.util.UUID;
 @Table(name = "orders")
 public class Order extends BaseEntity {
 
-    @Column(name = "order_number", length = 50, nullable = false, unique = true)
-    private String orderNumber;
+    @Column(name = "order_code", length = 50, nullable = false, unique = true)
+    private String orderCode;
 
     @Column(name = "user_id", length = 36, nullable = false)
     private String userId;
 
-    @Column(name = "customer_name", length = 200)
-    private String customerName;
+    @Column(name = "cust_name", length = 200)
+    private String custName;
 
-    @Column(name = "customer_email", length = 100)
-    private String customerEmail;
+    @Column(name = "cust_email", length = 100)
+    private String custEmail;
 
-    @Column(name = "customer_phone", length = 20)
-    private String customerPhone;
+    @Column(name = "cust_phone", length = 20)
+    private String custPhone;
 
+    @lombok.Builder.Default
     @Column(name = "status", nullable = false)
     private Integer status = 0;
 
-    @Column(name = "total_amount", nullable = false, precision = 19, scale = 2)
-    private BigDecimal totalAmount = BigDecimal.ZERO;
+    @lombok.Builder.Default
+    @Column(name = "amount", nullable = false, precision = 19, scale = 2)
+    private BigDecimal amount = BigDecimal.ZERO;
 
+    @lombok.Builder.Default
     @Column(name = "discount_amount", precision = 19, scale = 2)
     private BigDecimal discountAmount = BigDecimal.ZERO;
 
-    @Column(name = "tax_amount", precision = 19, scale = 2)
-    private BigDecimal taxAmount = BigDecimal.ZERO;
+    @lombok.Builder.Default
+    @Column(name = "ship_fee", precision = 19, scale = 2)
+    private BigDecimal shipFee = BigDecimal.ZERO;
 
-    @Column(name = "shipping_amount", precision = 19, scale = 2)
-    private BigDecimal shippingAmount = BigDecimal.ZERO;
+    @Column(name = "ship_addr", length = 500)
+    private String shipAddr;
 
-    @Column(name = "final_amount", nullable = false, precision = 19, scale = 2)
-    private BigDecimal finalAmount = BigDecimal.ZERO;
-
-    @Column(name = "currency", length = 3)
-    private String currency = "USD";
-
-    @Column(name = "shipping_address", length = 500)
-    private String shippingAddress;
-
-    @Column(name = "billing_address", length = 500)
-    private String billingAddress;
-
-    @Column(name = "customer_notes", length = 1000)
-    private String customerNotes;
-
-    @Column(name = "admin_notes", length = 1000)
-    private String adminNotes;
-
-    @Column(name = "order_date", nullable = false)
-    private LocalDateTime orderDate;
-
-    @Column(name = "confirmed_date")
-    private LocalDateTime confirmedDate;
+    @Column(name = "notes", length = 1000)
+    private String notes;
 
     @Column(name = "shipped_date")
     private LocalDateTime shippedDate;
@@ -90,23 +73,25 @@ public class Order extends BaseEntity {
     @Column(name = "cancelled_date")
     private LocalDateTime cancelledDate;
 
-    @Column(name = "payment_status")
-    private Integer paymentStatus = 0; // PaymentStatus.PENDING
+    @lombok.Builder.Default
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private List<OrderItem> items = new ArrayList<>();
 
-    @Column(name = "payment_method", length = 50)
-    private String paymentMethod;
+    // Payment-related fields
+    @Column(name = "payment_status", length = 20)
+    private Long paymentStatus;
 
     @Column(name = "transaction_id", length = 100)
     private String transactionId;
 
-    @Column(name = "payment_date")
-    private LocalDateTime paymentDate;
+    @Column(name = "payment_method", length = 50)
+    private String paymentMethod;
 
     @Column(name = "payment_failure_reason", length = 500)
     private String paymentFailureReason;
 
-    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    private List<OrderItem> items = new ArrayList<>();
+    @Column(name = "currency", length = 3)
+    private String currency = "VNĐ";
 
     /**
      * Lấy trạng thái đơn hàng dưới dạng enum.
@@ -125,55 +110,11 @@ public class Order extends BaseEntity {
     }
 
     /**
-     * Lấy trạng thái thanh toán dưới dạng enum.
-     */
-    public PaymentStatus getPaymentStatus() {
-        return PaymentStatus.fromValue(paymentStatus);
-    }
-
-    /**
-     * Thiết lập trạng thái thanh toán từ enum.
-     */
-    public void setPaymentStatus(PaymentStatus paymentStatus) {
-        if (paymentStatus != null) {
-            this.paymentStatus = paymentStatus.getValue();
-        }
-    }
-
-    /**
-     * Đánh dấu đơn hàng đã thanh toán thành công.
-     */
-    public void markAsPaid(String transactionId) {
-        setPaymentStatus(PaymentStatus.PAID);
-        this.transactionId = transactionId;
-        this.paymentDate = LocalDateTime.now();
-    }
-
-    /**
-     * Đánh dấu thanh toán thất bại.
-     */
-    public void markPaymentFailed(String reason) {
-        setPaymentStatus(PaymentStatus.FAILED);
-        this.paymentFailureReason = reason;
-    }
-
-    /**
-     * Xác nhận đơn hàng.
-     */
-    public void confirm() {
-        if (!getOrderStatus().isPending()) {
-            throw new IllegalStateException("Only pending orders can be confirmed");
-        }
-        setOrderStatus(OrderStatus.CONFIRMED);
-        this.confirmedDate = LocalDateTime.now();
-    }
-
-    /**
      * Xử lý đơn hàng.
      */
     public void process() {
-        if (!getOrderStatus().isConfirmed()) {
-            throw new IllegalStateException("Only confirmed orders can be processed");
+        if (!getOrderStatus().isPending()) {
+            throw new IllegalStateException("Only pending orders can be processed");
         }
         setOrderStatus(OrderStatus.PROCESSING);
     }
@@ -183,8 +124,8 @@ public class Order extends BaseEntity {
      */
     public void ship() {
         OrderStatus currentStatus = getOrderStatus();
-        if (currentStatus != OrderStatus.CONFIRMED && currentStatus != OrderStatus.PROCESSING) {
-            throw new IllegalStateException("Only confirmed or processing orders can be shipped");
+        if (currentStatus != OrderStatus.PROCESSING) {
+            throw new IllegalStateException("Only processing orders can be shipped");
         }
         setOrderStatus(OrderStatus.SHIPPED);
         this.shippedDate = LocalDateTime.now();
@@ -206,30 +147,25 @@ public class Order extends BaseEntity {
      */
     public void cancel() {
         if (!getOrderStatus().canCancel()) {
-            throw new IllegalStateException("Order cannot be cancelled in current status: " + getOrderStatus().getName());
+            throw new IllegalStateException(
+                    "Order cannot be cancelled in current status: " + getOrderStatus().getName());
         }
         setOrderStatus(OrderStatus.CANCELLED);
         this.cancelledDate = LocalDateTime.now();
     }
 
     /**
-     * Tính toán tổng tiền bao gồm items, giảm giá, thuế, và phí vận chuyển.
+     * Tính toán tổng tiền bao gồm items, giảm giá và phí vận chuyển.
      */
     public void calculateTotals() {
         BigDecimal itemsTotal = items.stream()
                 .map(OrderItem::getTotalPrice)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        this.totalAmount = itemsTotal;
-
         BigDecimal discount = discountAmount != null ? discountAmount : BigDecimal.ZERO;
-        BigDecimal tax = taxAmount != null ? taxAmount : BigDecimal.ZERO;
-        BigDecimal shipping = shippingAmount != null ? shippingAmount : BigDecimal.ZERO;
+        BigDecimal shipping = shipFee != null ? shipFee : BigDecimal.ZERO;
 
-        this.finalAmount = totalAmount
-                .subtract(discount)
-                .add(tax)
-                .add(shipping);
+        this.amount = itemsTotal.add(shipping).subtract(discount);
     }
 
     /**
@@ -257,6 +193,46 @@ public class Order extends BaseEntity {
     }
 
     /**
+     * Lấy trạng thái thanh toán dưới dạng enum.
+     */
+    public PaymentStatus getPaymentStatus() {
+        return PaymentStatus.fromValue(paymentStatus);
+    }
+
+    /**
+     * Thiết lập trạng thái thanh toán từ enum.
+     */
+    public void setPaymentStatus(PaymentStatus status) {
+        if (status != null) {
+            this.paymentStatus = status.getValue();
+        }
+    }
+
+    /**
+     * Đánh dấu đơn hàng đã thanh toán.
+     *
+     * @param transactionId ID giao dịch thanh toán
+     */
+    public void markAsPaid(String transactionId) {
+        if (transactionId == null || transactionId.trim().isEmpty()) {
+            throw new IllegalArgumentException("Transaction ID cannot be null or empty");
+        }
+        this.paymentStatus = 2L; // PAID
+        this.transactionId = transactionId;
+        this.amount = this.amount != null ? this.amount : BigDecimal.ZERO;
+    }
+
+    /**
+     * Đánh dấu thanh toán thất bại.
+     *
+     * @param reason Lý do thất bại
+     */
+    public void markPaymentFailed(String reason) {
+        this.paymentStatus = 3L;
+        this.paymentFailureReason = reason;
+    }
+
+    /**
      * Tạo mã số đơn hàng duy nhất.
      */
     private String generateOrderNumber() {
@@ -266,19 +242,18 @@ public class Order extends BaseEntity {
     }
 
     /**
-     * Tạo mã số đơn hàng và thiết lập ngày đặt hàng trước khi lưu.
+     * Tạo mã số đơn hàng trước khi lưu.
      */
-    @PrePersist
     protected void onCreate() {
         super.onCreate();
-        if (orderNumber == null || orderNumber.isEmpty()) {
-            orderNumber = generateOrderNumber();
-        }
-        if (orderDate == null) {
-            orderDate = LocalDateTime.now();
+        if (orderCode == null || orderCode.isEmpty()) {
+            orderCode = generateOrderNumber();
         }
         if (status == null) {
             status = 0;
+        }
+        if (paymentStatus == null) {
+            paymentStatus = 0L;
         }
         calculateTotals();
     }

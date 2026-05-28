@@ -8,7 +8,6 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
 import java.math.BigDecimal;
-import java.util.Objects;
 
 /**
  * Order Item entity representing a product in an order.
@@ -36,22 +35,24 @@ public class OrderItem extends BaseEntity {
     private String productImage;
 
     @Column(name = "quantity", nullable = false)
+    @lombok.Builder.Default
     private Integer quantity = 1;
 
     @Column(name = "unit_price", nullable = false, precision = 19, scale = 2)
+    @lombok.Builder.Default
     private BigDecimal unitPrice = BigDecimal.ZERO;
 
     @Column(name = "discount_amount", precision = 19, scale = 2)
+    @lombok.Builder.Default
     private BigDecimal discountAmount = BigDecimal.ZERO;
 
     @Column(name = "tax_amount", precision = 19, scale = 2)
+    @lombok.Builder.Default
     private BigDecimal taxAmount = BigDecimal.ZERO;
 
     @Column(name = "total_price", nullable = false, precision = 19, scale = 2)
+    @lombok.Builder.Default
     private BigDecimal totalPrice = BigDecimal.ZERO;
-
-    @Column(name = "currency", length = 3)
-    private String currency = "USD";
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "order_id", nullable = false)

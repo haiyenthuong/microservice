@@ -54,7 +54,7 @@ public class OrderCreatedEvent extends OrderEvent {
             BigDecimal discountAmount,
             BigDecimal taxAmount,
             BigDecimal shippingAmount,
-            BigDecimal finalAmount,
+            BigDecimal amount,
             String currency,
             String paymentMethod
     ) {
@@ -76,7 +76,7 @@ public class OrderCreatedEvent extends OrderEvent {
         this.discountAmount = discountAmount;
         this.taxAmount = taxAmount;
         this.shippingAmount = shippingAmount;
-        this.finalAmount = finalAmount;
+        this.finalAmount = amount;
         this.currency = currency;
         this.paymentMethod = paymentMethod;
     }
@@ -238,7 +238,7 @@ public class OrderCreatedEvent extends OrderEvent {
         private BigDecimal discountAmount;
         private BigDecimal taxAmount;
         private BigDecimal shippingAmount;
-        private BigDecimal finalAmount;
+        private BigDecimal amount;
         private String currency;
         private String paymentMethod;
 
@@ -317,13 +317,13 @@ public class OrderCreatedEvent extends OrderEvent {
             return this;
         }
 
-        public OrderCreatedEventBuilder shippingAmount(BigDecimal shippingAmount) {
+        public OrderCreatedEventBuilder shipFee(BigDecimal shippingAmount) {
             this.shippingAmount = shippingAmount;
             return this;
         }
 
-        public OrderCreatedEventBuilder finalAmount(BigDecimal finalAmount) {
-            this.finalAmount = finalAmount;
+        public OrderCreatedEventBuilder amount(BigDecimal finalAmount) {
+            this.amount = finalAmount;
             return this;
         }
 
@@ -369,7 +369,7 @@ public class OrderCreatedEvent extends OrderEvent {
                     discountAmount,
                     taxAmount,
                     shippingAmount,
-                    finalAmount,
+                    amount,
                     currency,
                     paymentMethod
             );
